@@ -1,30 +1,32 @@
+import os
+import torch
+from torch.utils.data import Dataset, DataLoader
 import seizure_data_processing as sdp
 
+class PIDataset(Dataset):
+    def __init__(self, path, channels):
+        self.path = path
+        self.channels = channels
+        self.file_list = self._get_file_list()
 
+    def _get_file_list(self):
+        file_list = []
+        for root, _, files in os.walk(self.path):
+            for file in files:
+                if file.endswith('.edf'):
+                    file_list.append(os.path.join(root, file))
+        return file_list
 
+    def __len__(self):
+        return len(self.file_list)
 
-class Dataset:
-    
-    
-    def __init__(self, path=None, channels=None):
-        # assert path is not None, "No dataset provided"
-        # assert channels is not None, "No channels provided"
-        
-        # Load a single file
-        file = (
-                r"./data/chb23_06.edf"
-        )
-        channels = "FP1-F7;F7-T7;T7-P7;P7-O1;FP1-F3;F3-C3;C3-P3;P3-O1;FP2-F4;F4-C4;C4-P4;P4-O2;FP2-F8;F8-T8;T8-P8;T8-P8;P8-O2;FZ-CZ;CZ-PZ;P7-T7;T7-FT9;FT9-FT10;FT10-T8;T8-P8".split(";")
-        self.eeg_file = sdp.EEG(file, channels=channels)
-    
-    def data(self):
-        return self.eeg_file.data
-    
-    def labels(self):
-        return self.eeg_file.get_labels()
-    
-    def annotations(self):
-        return self.eeg_file.annotations
-    
-    def plot(self):
-        self.eeg_file.plot()
+    def __getitem__(self, idx):
+        file = self.file_list[idx]
+        eeg_file = sdp.EEG(file, channels=self.channels)
+        data = torch.tensor(eeg_file.data)
+        labels = torch.tensor(eeg_file.get_labels())
+        return data, labels
+
+def get_pi_dataloader(path, channels, batch_size=32, shuffle=True):
+    dataset = PIDataset(path, channels)
+    return DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)

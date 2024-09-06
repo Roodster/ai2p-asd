@@ -45,7 +45,7 @@ When commiting to a branch:
 git commit -m "<commit-message>"
 ```
 
-When pushing (the first time u have to add 'origin <name-of-branch>').
+When pushing (the first time u have to add '--set-upstream origin <name-of-branch>').
 ```
 git push 
 ```

@@ -4,7 +4,7 @@
 """
 
 import torch as th
-from src.utils import parse_args
+from asd.common.utils import parse_args
 
 class Args():
     
@@ -21,7 +21,8 @@ class Args():
         # ===== EXPERIMENT =====
         self.seed = self.config.get("seed", 1)
 
-        # ===== LEARNING ===== 
+        # ===== TRAINING ===== 
+        self.batch_size = self.config.get("batch_size", 32)
         
         # ===== EVALUATION =====
         
