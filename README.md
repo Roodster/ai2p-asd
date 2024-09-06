@@ -20,6 +20,7 @@ notebooks: stores Jupyter notebooks
 2. cd ai2p-asd
 3. python -m venv .venv
 4. For mac `source venv/bin/activate`
+5. pip install -r requirements.txt
 ```
 
 
