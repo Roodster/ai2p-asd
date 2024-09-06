@@ -16,5 +16,8 @@ if __name__ == "__main__":
     
     
     # Train and evaluate
-    
+    # Now you can use the dataloader in your training loop
+    for batch_data, batch_labels in dataloader:
+        # Your training code here
+        pass
     

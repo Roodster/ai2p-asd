@@ -1,4 +1,5 @@
 import os
+import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader
 import seizure_data_processing as sdp
@@ -15,6 +16,7 @@ class PIDataset(Dataset):
             for file in files:
                 if file.endswith('.edf'):
                     file_list.append(os.path.join(root, file))
+        print('file_list', file_list)
         return file_list
 
     def __len__(self):
@@ -23,7 +25,7 @@ class PIDataset(Dataset):
     def __getitem__(self, idx):
         file = self.file_list[idx]
         eeg_file = sdp.EEG(file, channels=self.channels)
-        data = torch.tensor(eeg_file.data)
+        data = torch.tensor(eeg_file.data.astype(np.float32))
         labels = torch.tensor(eeg_file.get_labels())
         return data, labels
 

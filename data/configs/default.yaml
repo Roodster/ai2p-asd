@@ -3,4 +3,4 @@
 
 
 ### ===== TRAIN PARAMETERS =====
-batch_size: 128
+batch_size: 4
