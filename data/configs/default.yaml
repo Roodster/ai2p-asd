@@ -2,5 +2,20 @@
 
 
 
+### EXPERIMENT
+device: cpu
+
+
+
+### ===== DATASET PARAMETERS =====
+train_ratio: 0.7
+test_ratio: 0.15
+
+
 ### ===== TRAIN PARAMETERS =====
 batch_size: 4
+learning_rate: 0.001
+n_epochs: 2
+
+
+eval_interval: 10

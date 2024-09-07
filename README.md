@@ -50,3 +50,27 @@ When pushing (the first time u have to add '--set-upstream origin <name-of-branc
 ```
 git push 
 ```
+
+
+# Dataset instruction
+
+```
+1. Download dataset from https://physionet.org/content/chbmit/1.0.0/ 
+2. Extract to `./data/dataset/`.
+```
+
+
+# Jupyter notebook instructions
+
+For now, we do not allow .ipynb file extensions. Since we have different machines and most likely different installs,
+having jupyter notebooks become a hassle. Instead, we use jupytext.
+
+To convert a .py file into jupyter notebook
+```
+jupytext --to ipynb <path-to-file>
+```
+
+To convert a .ipynbb file into python:
+```
+jupytext --to py <path-to-notebook>
+```

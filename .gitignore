@@ -6,6 +6,10 @@
 
 # files
 **/data/dataset
+notebooks/data
+**/temp
+
+**.ipynb
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

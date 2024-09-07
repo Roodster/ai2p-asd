@@ -1,8 +1,12 @@
-from asd.make_dataset import get_pi_dataloader
+from asd.make_dataset import get_dataloaders, SpectrogramDataset
 from asd.args import Args
+from asd.models.model import DummyModel
+from asd.learner import Learner
+import torch as th
+import torch.nn as nn
 
-
-
+import warnings
+warnings.filterwarnings('ignore')
 
 
 if __name__ == "__main__":
@@ -12,12 +16,30 @@ if __name__ == "__main__":
     # Load arguments
     args = Args(file="./data/configs/default.yaml")
     # Load dataset
-    dataloader = get_pi_dataloader(path='./data/dataset/data/', channels=channels, batch_size=128, shuffle=False)
     
+    dataset = SpectrogramDataset('./data/temp/')
+    train_loader, val_loader, test_loader = get_dataloaders(
+        dataset=dataset,
+        train_ratio=0.8,
+        test_ratio=0.1,
+        batch_size=args.batch_size,
+        shuffle=True
+    )
     
-    # Train and evaluate
-    # Now you can use the dataloader in your training loop
-    for batch_data, batch_labels in dataloader:
-        # Your training code here
-        pass
+    model = DummyModel()    
+
+    optimizer = th.optim.Adam(params=model.parameters(), 
+                              lr=args.learning_rate)
     
+    criterion = nn.BCELoss()
+        
+    learner = Learner(args=args, 
+                      model=model, 
+                      train_loader=train_loader, 
+                      val_loader=val_loader, 
+                      test_loader=test_loader, 
+                      optimizer=optimizer,
+                      criterion=criterion
+                )
+    
+    learner.train()
