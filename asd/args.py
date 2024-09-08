@@ -34,6 +34,8 @@ class Args():
         
         # ===== EVALUATION =====
         self.eval_interval = self.config.get("eval_interval", 10)
+        self.eval_save_model_interval = self.config.get("eval_save_model_interval", 10)
+
         
         # ===== PLOTTING =====
 

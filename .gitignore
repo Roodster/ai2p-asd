@@ -6,8 +6,10 @@
 
 # files
 **/data/dataset
+**/data/preprocessed
 notebooks/data
 **/temp
+**.zip
 
 **.ipynb
 

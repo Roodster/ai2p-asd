@@ -1,6 +1,6 @@
 import torch as th
 from tqdm import tqdm
-
+import os
 
 class BaseLearner:
     
@@ -62,7 +62,8 @@ class Learner(BaseLearner):
             
             train_loss = 0
             
-            for batch_data, batch_labels in self.train_loader:
+            for iteration, (batch_data, batch_labels) in enumerate(self.train_loader):
+                pbar.set_description(f"batch_progress={iteration/len(self.train_loader):.3f}%")
                 # Your training code here
                 batch_data, batch_labels = batch_data.to(self.device), batch_labels.to(self.device)
                 
@@ -73,6 +74,12 @@ class Learner(BaseLearner):
                 self.optimizer.step()
                 
                 train_loss += loss.item()
+                
+            if (epoch + 1) % self.args.eval_save_model_interval == 0:
+                if not os.path.exists(f'./logs/models/'):
+                    os.makedirs(f'./logs/models/')
+
+                th.save(self.model.state_dict(), f'./logs/models/model_weights_{epoch}.pth')
             
             pbar.set_description(f"progress={epoch+1}/{self.n_epochs}% loss={train_loss:.4f}")
 

@@ -30,19 +30,27 @@ class RawDataset(Dataset):
         return data, labels
     
 class SpectrogramDataset(Dataset):
-    def __init__(self, path):
-        self.path = path
-        self.spectrograms, self.labels = self._load_data()
+    def __init__(self, root_dir):
+        self.root_dir = root_dir
+        self.file_list = self._get_file_list()
 
-    def _load_data(self):
-        spectrograms, labels = load_spectrograms_and_labels(self.path)
-        return torch.from_numpy(spectrograms.reshape(-1, 1, 24, 129).astype(np.complex128)).float(), torch.from_numpy(labels).float()
+    def _get_file_list(self):
+        file_list = []
+        for root, _, files in os.walk(self.root_dir):
+            for file in files:
+                if file.endswith('.npz'):
+                    file_list.append(os.path.join(root, file))
+        return file_list
 
     def __len__(self):
-        return len(self.labels)
+        return len(self.file_list)
 
     def __getitem__(self, idx):
-        return self.spectrograms[idx], self.labels[idx]
+        npz_file = np.load(self.file_list[idx])
+        spectrogram = torch.from_numpy(npz_file['x'].astype(np.float32))
+        
+        label = torch.from_numpy(npz_file['y'].astype(np.float32))
+        return spectrogram, label
     
     
 def load_spectrograms_and_labels(load_dir):

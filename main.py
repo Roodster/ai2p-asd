@@ -17,11 +17,11 @@ if __name__ == "__main__":
     args = Args(file="./data/configs/default.yaml")
     # Load dataset
     
-    dataset = SpectrogramDataset('./data/temp/')
+    dataset = SpectrogramDataset('./data/preprocessed/')
     train_loader, val_loader, test_loader = get_dataloaders(
         dataset=dataset,
-        train_ratio=0.8,
-        test_ratio=0.1,
+        train_ratio=args.train_ratio,
+        test_ratio=args.test_ratio,
         batch_size=args.batch_size,
         shuffle=True
     )
