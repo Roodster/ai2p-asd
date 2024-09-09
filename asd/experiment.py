@@ -1,0 +1,107 @@
+import numpy as np
+import torch as th
+from sklearn.metrics import multilabel_confusion_matrix
+from tqdm import tqdm
+
+
+class Experiment:
+    
+    
+    def __init__(self, args, learner, writer, results):
+        assert learner is not None, "NO learner"
+        assert writer is not None, "Running an experiment without loggin is a futile endeavor."
+        assert results is not None, "Running an experiment without logging is a futile endeavor."
+
+
+        # ===== DEPENDENCIES =====
+        self.args = args
+        self.learner = learner
+        self.writer = writer
+        self.results = results
+        
+         # ===== TRAINING =====
+        self.device = args.device
+        self.n_epochs = args.n_epochs       
+        
+        
+        # ===== EVALUATION =====
+        assert args.eval_interval > 0, "Can't modulo by zero."
+        self.eval_interval = args.eval_interval
+        assert args.eval_save_model_interval > 0, "Can't modulo by zero."
+        self.save_model_interval = args.eval_save_model_interval
+    
+    
+    def run(self, train_loader, test_loader):
+        assert train_loader is not None, "Please, provide a training dataset : )."
+        self.learner.model.train()
+        
+        
+        self.writer.save_hyperparameters(self.args)
+
+        pbar = tqdm(range(self.n_epochs))
+        
+        for epoch in pbar:
+            
+            train_loss = 0
+            
+            i = 0
+            for batch_data, batch_labels in train_loader:
+                
+                pbar.set_description(f"epoch={epoch} i={i}")
+                
+                if i >= 1:
+                    break
+                
+                i += 1
+                outputs = self.learner.predict(batch_data)
+                loss = self.learner.compute_loss(y_pred=outputs, y_test=batch_labels)    
+                self.learner.update(loss)
+                train_loss += loss
+            
+            if (epoch + 1) % self.eval_interval == 0: 
+                self.evaluate_samples(test_loader)
+                self.results.train_loss = train_loss.detach().numpy()
+                self.results.epoch = epoch
+            
+            if (epoch + 1) % self.save_model_interval == 0:
+                self.writer.save_model(self.learner.model, epoch+1)        
+    
+        self.writer.save_statistics(self.results.get())
+                
+
+    def evaluate_samples(self, test_loader):
+        """
+        Args:
+            loader (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        self.learner.model.eval()
+    
+        metrics = {
+            'tp': 0,
+            'fp': 0,
+            'tn': 0,
+            'fn': 0,
+            'loss': 0
+        }
+        with th.no_grad():
+            for batch_data, batch_labels in test_loader:
+                batch_data, batch_labels = batch_data.to(self.device), batch_labels.to(self.device)
+                outputs = (self.learner.model(batch_data) > 0.5).float()
+                loss = self.learner.compute_loss(y_pred=outputs, y_test=batch_labels)   
+                tn, fp, fn, tp = np.sum(multilabel_confusion_matrix(batch_labels, outputs),axis=0).ravel()
+                
+                metrics['tp'] += tp
+                metrics['fp'] += fp
+                metrics['fn'] += fn
+                metrics['tn'] += tn   
+                metrics['loss'] += loss
+                                
+        self.results.tp = metrics['tp']
+        self.results.fp = metrics['fp']
+        self.results.fn = metrics['fn']
+        self.results.tn = metrics['tn']
+        self.results.test_loss = metrics['loss'].detach().numpy()
+             

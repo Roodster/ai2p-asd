@@ -13,11 +13,13 @@ class Args():
         self.config = parse_args(file)
         
         # ===== METADATA =====
+        self.exp_name = self.config.get("exp_name", "exp")
 
         # ===== FILE HANDLING =====
+        self.log_dir = self.config.get("log_dir", "./logs")
         
         # ===== MODEL =====
-        
+        self.model = self.config.get("model", "dummy")
         
         # ===== DATASET =====
         self.train_ratio = self.config.get("train_ratio", 0.7)
