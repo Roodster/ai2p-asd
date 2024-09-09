@@ -2,21 +2,28 @@
 
 
 
-### EXPERIMENT
-device: cpu
+### METADATA
+exp_name: dev
+
+# ===== FILE HANDLING =====
+log_dir: ./logs
 
 
+# ===== EXPERIMENT ====
+model: dummy
+seed: 1
 
 ### ===== DATASET PARAMETERS =====
 train_ratio: 0.7
-test_ratio: 0.15
+test_ratio: 0.3
 
 
 ### ===== TRAIN PARAMETERS =====
+device: cpu
 batch_size: 32
 learning_rate: 0.001
-n_epochs: 1
+n_epochs: 2
 
 
 eval_save_model_interval: 1
-eval_interval: 10
+eval_interval: 1

@@ -1,10 +1,15 @@
-from asd.make_dataset import get_dataloaders, SpectrogramDataset
+from torch.utils.data import DataLoader
+
+
+from asd.dataset import get_dataloaders, SegmentsDataset
 from asd.args import Args
+from asd.writer import Writer
+from asd.results import Results
 from asd.models.model import DummyModel
 from asd.learner import Learner
+from asd.experiment import Experiment
 import torch as th
 import torch.nn as nn
-
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -17,29 +22,32 @@ if __name__ == "__main__":
     args = Args(file="./data/configs/default.yaml")
     # Load dataset
     
-    dataset = SpectrogramDataset('./data/preprocessed/')
-    train_loader, val_loader, test_loader = get_dataloaders(
-        dataset=dataset,
-        train_ratio=args.train_ratio,
-        test_ratio=args.test_ratio,
-        batch_size=args.batch_size,
-        shuffle=True
-    )
+    train_dataset = SegmentsDataset("./data/dataset/train/preprocessed/", mode='train', patient_id='01')
+    test_dataset = SegmentsDataset("./data/dataset/train/preprocessed/", mode='test', patient_id='01')
     
-    model = DummyModel()    
+    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=4)
+    test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, num_workers=4)
+    
+    writer = Writer(args=args)
+    model = DummyModel(args=args)    
 
     optimizer = th.optim.Adam(params=model.parameters(), 
                               lr=args.learning_rate)
     
     criterion = nn.BCELoss()
-        
+    
+    results = Results()
+    
     learner = Learner(args=args, 
                       model=model, 
-                      train_loader=train_loader, 
-                      val_loader=val_loader, 
-                      test_loader=test_loader, 
                       optimizer=optimizer,
                       criterion=criterion
                 )
     
-    learner.train()
+    experiment = Experiment(args=args, 
+                            learner=learner,
+                            writer=writer,
+                            results=results)
+    
+    
+    experiment.run(train_loader=train_loader, test_loader=test_loader)

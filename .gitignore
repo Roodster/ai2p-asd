@@ -10,7 +10,7 @@
 notebooks/data
 **/temp
 **.zip
-
+**/logs
 **.ipynb
 
 # Byte-compiled / optimized / DLL files
