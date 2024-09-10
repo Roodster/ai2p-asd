@@ -1,5 +1,5 @@
 import pandas as pd
-
+import numpy as np
 
 class Results:
     
@@ -8,7 +8,8 @@ class Results:
         self._results = None
         
         if file is not None:
-            self.results = pd.read_csv(file)    
+            self._results = pd.read_csv(file)    
+
 
         self._epochs = []
         self._train_losses = []
@@ -21,13 +22,19 @@ class Results:
     def get(self):
         
         if self._results is not None:
-            self._results['epoch'] += self._epochs
-            self._results['train_loss'] += self._train_losses
-            self._results['test_loss'] += self._test_losses
-            self._results['tp'] += self._tps
-            self._results['fp'] += self._fps
-            self._results['tn'] += self._tns
-            self._results['fn'] += self._fns
+            
+            data = np.empty((7, len(self._epochs)))
+            
+            data[0,:] = [epoch + len(self._results['epoch']) for epoch in self._epochs]
+            data[1,:] = self._train_losses
+            data[2,:] = self._test_losses
+            data[3, :] = self._tps
+            data[4, :] = self._fps
+            data[5, :] = self._tns
+            data[6, :] = self._fns
+            
+            self._results = pd.concat([self._results, pd.DataFrame(data.T, columns=self._results.columns)], ignore_index=True)
+            
         else:
             results = {
                 'epoch': self._epochs,
@@ -38,12 +45,9 @@ class Results:
                 'tn': self._tns,
                 'fn': self._fns
             }
-            
-            print(results)
-            
-            
+                        
             self._results = pd.DataFrame(results)
-                    
+        
         return self._results
     
     # Property and setter for train_losses

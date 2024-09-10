@@ -13,7 +13,9 @@ log_dir: ./logs
 model: dummy
 seed: 1
 
+
 ### ===== DATASET PARAMETERS =====
+patient_id: 1 # defines which patient to exclude for training/testing
 train_ratio: 0.7
 test_ratio: 0.3
 
@@ -22,7 +24,7 @@ test_ratio: 0.3
 device: cpu
 batch_size: 32
 learning_rate: 0.001
-n_epochs: 2
+n_epochs: 1
 
 
 eval_save_model_interval: 1

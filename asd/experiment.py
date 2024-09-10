@@ -19,6 +19,8 @@ class Experiment:
         self.writer = writer
         self.results = results
         
+        self.start_epochs = len(self.results.epoch)
+        
          # ===== TRAINING =====
         self.device = args.device
         self.n_epochs = args.n_epochs       
@@ -38,7 +40,7 @@ class Experiment:
         
         self.writer.save_hyperparameters(self.args)
 
-        pbar = tqdm(range(self.n_epochs))
+        pbar = tqdm(range(self.start_epochs, self.start_epochs + self.n_epochs))
         
         for epoch in pbar:
             
@@ -47,7 +49,7 @@ class Experiment:
             i = 0
             for batch_data, batch_labels in train_loader:
                 
-                pbar.set_description(f"epoch={epoch} i={i}")
+                pbar.set_description(f"epoch={epoch+1} i={i}")
                 
                 if i >= 1:
                     break
@@ -61,7 +63,7 @@ class Experiment:
             if (epoch + 1) % self.eval_interval == 0: 
                 self.evaluate_samples(test_loader)
                 self.results.train_loss = train_loss.detach().numpy()
-                self.results.epoch = epoch
+                self.results.epoch = epoch+1
             
             if (epoch + 1) % self.save_model_interval == 0:
                 self.writer.save_model(self.learner.model, epoch+1)        

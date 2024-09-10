@@ -22,10 +22,10 @@ class DummyModel(BaseModel):
         self.dropout = nn.Dropout(0.5)
 
     def forward(self, x):
-        x = th.relu(self.conv1(x))          # Output: [32, 129, 1]
-        x = th.relu(self.conv2(x))          # Output: [64, 129, 1]
-        x = th.relu(self.conv3(x))          # Output: [64, 129, 1]
-        x = self.adaptive_pool(x)              # Output: [64, 16, 1]
+        x = th.relu(self.conv1(x))          
+        x = th.relu(self.conv2(x))          
+        x = th.relu(self.conv3(x))          
+        x = self.adaptive_pool(x)            
         x = x.view(-1, 4 * 2)
         x = th.relu(self.fc1(x))
         x = self.dropout(x)
