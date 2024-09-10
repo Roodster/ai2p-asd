@@ -24,10 +24,10 @@ class Writer():
     def __init__(self, args):
         
         self.args = args
-        self.datetime = str(dt.datetime.now().strftime("%d%m%Y%H%M"))
+        # self.datetime = str(dt.datetime.now().strftime("%d%m%Y%H%M"))
         self.root = args.log_dir
         self.base_dir = self.root + f"/run_{args.exp_name}_{args.model}"
-        self.train_dir = self.base_dir + f"/seed_{args.seed}_{self.datetime}"
+        self.train_dir = self.base_dir + f"/seed_{args.seed}_eval_{args.patient_id}"
         self.eval_dir = self.base_dir + f"/evaluation_{args.exp_name}_{args.model}"
         self.model_dir = self.train_dir + "/models"
         
@@ -44,7 +44,7 @@ class Writer():
     
     def save_model(self, model, epoch):
         _dir = os.path.join(self.model_dir)
-        file = f"/model_{self.datetime}_{self.args.exp_name}_{self.args.model}_{epoch}.pickle"
+        file = f"/model_{self.args.model}_{epoch}.pickle"
 
         full_path = _dir + file
         th.save(model.state_dict(), full_path)
@@ -57,7 +57,7 @@ class Writer():
         plot.savefig(plot_path)
     
     def save_statistics(self, statistics):
-        filepath = f"/stats_{self.args.exp_name}_{self.args.model}.json"
+        filepath = f"/stats_{self.args.exp_name}_{self.args.model}.csv"
         stats_path = self.train_dir + filepath
         statistics.to_csv(stats_path, index=False)
             

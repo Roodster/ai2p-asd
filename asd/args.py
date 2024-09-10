@@ -22,6 +22,7 @@ class Args():
         self.model = self.config.get("model", "dummy")
         
         # ===== DATASET =====
+        self.patient_id = str(self.config.get("patient_id", 1)).zfill(2)
         self.train_ratio = self.config.get("train_ratio", 0.7)
         self.test_ratio = self.config.get("test_ratio", 0.15)
         

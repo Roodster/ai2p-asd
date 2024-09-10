@@ -14,29 +14,34 @@ import warnings
 warnings.filterwarnings('ignore')
 
 
-if __name__ == "__main__":
-    
-    channels = "FP1-F7;F7-T7;T7-P7;P7-O1;FP1-F3;F3-C3;C3-P3;P3-O1;FP2-F4;F4-C4;C4-P4;P4-O2;FP2-F8;F8-T8;T8-P8;T8-P8;P8-O2;FZ-CZ;CZ-PZ;P7-T7;T7-FT9;FT9-FT10;FT10-T8;T8-P8".split(";")
 
+def main():
+        
     # Load arguments
     args = Args(file="./data/configs/default.yaml")
+    
     # Load dataset
+    train_dataset = SegmentsDataset("./data/dataset/train/preprocessed/", mode='train', patient_id=args.patient_id)
+    test_dataset = SegmentsDataset("./data/dataset/train/preprocessed/", mode='test', patient_id=args.patient_id)
     
-    train_dataset = SegmentsDataset("./data/dataset/train/preprocessed/", mode='train', patient_id='01')
-    test_dataset = SegmentsDataset("./data/dataset/train/preprocessed/", mode='test', patient_id='01')
-    
+    # Instantiate dataloaders 
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=4)
     test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, num_workers=4)
     
     writer = Writer(args=args)
+    
+    
     model = DummyModel(args=args)    
-
+    # if u want to load an existing model. use this. Dont forget to add the corresponding results file to the results
+    model.load_state_dict(th.load(".\logs\\run_dev_dummy\seed_1_eval_01\models\model_dummy_2.pickle", weights_only=True))
+    
     optimizer = th.optim.Adam(params=model.parameters(), 
                               lr=args.learning_rate)
     
     criterion = nn.BCELoss()
     
-    results = Results()
+    results = Results(file="./logs/run_dev_dummy/seed_1_eval_01/stats_dev_dummy.csv")
+    
     
     learner = Learner(args=args, 
                       model=model, 
@@ -51,3 +56,10 @@ if __name__ == "__main__":
     
     
     experiment.run(train_loader=train_loader, test_loader=test_loader)
+
+
+if __name__ == "__main__":
+
+    # import cProfile
+    # cProfile.run('main()')
+    main()
