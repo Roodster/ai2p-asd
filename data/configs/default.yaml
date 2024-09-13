@@ -10,7 +10,7 @@ log_dir: ./logs
 
 
 # ===== EXPERIMENT ====
-model: dummy
+model: cnn-bilstm
 seed: 1
 
 

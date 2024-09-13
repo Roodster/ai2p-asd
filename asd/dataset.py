@@ -4,6 +4,8 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 import seizure_data_processing as sdp
 import random
+import time
+from tqdm import tqdm
 
 class RawDataset(Dataset):
     def __init__(self, path, channels):
@@ -29,7 +31,7 @@ class RawDataset(Dataset):
         labels = torch.tensor(eeg_file.get_labels())
         return data, labels
     
-class SegmentsDataset(Dataset):
+class OnlineSegmentsDataset(Dataset):
     def __init__(self, root_dir, mode='full', patient_id=None):
         """
         
@@ -84,10 +86,97 @@ class SegmentsDataset(Dataset):
         return len(self.file_list)
 
     def __getitem__(self, idx):
+
         npz_file = np.load(self.file_list[idx])
         segment = torch.from_numpy(npz_file['x'].astype(np.float32))
         
-        label = torch.from_numpy(npz_file['y'].astype(np.float32))
+        label = torch.from_numpy(npz_file['y'].astype(np.float32))        
+        return segment, label
+    
+    
+class OfflineSegmentsDataset(Dataset):
+    def __init__(self, root_dir, mode='full', patient_id=None):
+        """
+        
+
+        Args:
+            root_dir: path to directory
+            modes: 
+                'full': uses data from all patients.
+                'train': exclude data from given id
+                'test': only include data from given id
+            id: patient id to include/exlude data. Depends on mode.
+        """
+        
+        self.root_dir = root_dir
+        self.file_list = self._get_file_list(mode=mode, patient_id=patient_id)
+        self.data = self._load_data()
+
+    def _get_file_list(self, mode='full', patient_id=None):
+        """
+        Generates a list of file paths based on the mode and patient ID.
+
+        Args:
+            mode (str): Mode to specify the dataset type ('full', 'train', 'test').
+            patient_id (str): Patient ID to include/exclude based on the mode.
+
+        Returns:
+            list: List of file paths matching the mode and patient ID criteria.
+        """
+        file_list = []
+        
+        for root, _, files in os.walk(self.root_dir):
+            # Determine if the current directory matches the inclusion/exclusion criteria
+            is_patient_dir = patient_id is not None and patient_id in root
+            
+            # Filter files based on the mode
+            if (mode == 'train' and is_patient_dir):
+                # Skip this directory if it's the patient to be excluded
+                continue
+            
+            elif (mode == 'test' and not is_patient_dir):
+                # Skip this directory if it doesn't match the patient to include
+                continue
+
+            # Add .npz files from the appropriate directories
+            for file in files:
+                if file.endswith('.npz'):
+                    file_list.append(os.path.join(root, file))
+                    
+        return file_list[:10]
+
+    def _load_data(self):
+        """
+        Loads all data into RAM during initialization.
+
+        Returns:
+            list: A list of tuples where each tuple contains a segment tensor and a label tensor.
+        """
+        data = []
+        pbar = tqdm(self.file_list)
+        pbar.set_description("Loading dataset...")
+        for file_path in pbar:
+            npz_file = np.load(file_path)
+            segment = torch.from_numpy(npz_file['x'].astype(np.float32))
+            label = torch.from_numpy(npz_file['y'].astype(np.float32))
+            data.append((segment, label))
+        return data
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, idx):
+        """
+        Returns the segment, label, and loading time for the specified index.
+
+        Args:
+            idx (int): Index of the data to retrieve.
+
+        Returns:
+            tuple: (segment, label, load_time)
+        """
+        segment, label = self.data[idx]
+                
         return segment, label
     
 
@@ -132,5 +221,5 @@ def get_dataloaders(dataset,
          
     
 if __name__ == "__main__":
-   ds1 = SegmentsDataset("../data/preprocessed/", mode='train', patient_id='01')
-   ds2 = SegmentsDataset("../data/preprocessed/", mode='test', patient_id='01')
+   ds1 = OnlineSegmentsDataset("../data/preprocessed/", mode='train', patient_id='01')
+   ds2 = OnlineSegmentsDataset("../data/preprocessed/", mode='test', patient_id='01')

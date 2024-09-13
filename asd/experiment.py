@@ -48,9 +48,7 @@ class Experiment:
             
             i = 0
             for batch_data, batch_labels in train_loader:
-                
-                pbar.set_description(f"epoch={epoch+1} i={i}")
-                
+                            
                 if i >= 1:
                     break
                 
