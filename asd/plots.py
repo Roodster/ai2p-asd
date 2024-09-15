@@ -42,18 +42,18 @@ class Plots:
 
         # Plot the losses in the left subplot
         ax = plt.subplot(1, n_plots, 2)
-        ax.title(label="Train/Test Loss")
+        ax.set_title(label="Train/Test Loss")
         ax.plot(epochs, train_losses, colors[0], label='train')
         ax.plot(epochs, test_losses, colors[2], label='test')
-        ax.legend
+        ax.legend()
         ax.xlabel('Epochs')
         ax.ylabel('Loss')
         # ax.plot(env_steps, lengths, colors[0])
         # ax.set_xlabel('environment steps' if self.plot_train_samples else 'episodes')
         # ax.set_ylabel('episode length')
-        # # Plot the losses in the right subplot
+        # # Plot the metrics in the right subplot
         ax = plt.subplot(1, n_plots, 2)
-        plt.title(label="Performance metrics")
+        ax.set_title(label="Performance metrics")
         ax.plot(epochs, sensitivities, colors[0], label='sensitivity')
         ax.plot(epochs, precisions, colors[1], label='precision')
         ax.plot(epochs, f1s, colors[2], label='f1-measure')
