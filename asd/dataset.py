@@ -143,7 +143,7 @@ class OfflineSegmentsDataset(Dataset):
                 if file.endswith('.npz'):
                     file_list.append(os.path.join(root, file))
                     
-        return file_list[:10]
+        return file_list
 
     def _load_data(self):
         """

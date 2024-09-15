@@ -2,15 +2,10 @@ import pandas as pd
 import numpy as np
 
 class Results:
-    
     def __init__(self, file=None):
-        
         self._results = None
         
-        if file is not None:
-            self._results = pd.read_csv(file)    
-
-
+        # Initialize lists
         self._epochs = []
         self._train_losses = []
         self._test_losses = []
@@ -18,24 +13,37 @@ class Results:
         self._fps = []
         self._tns = []
         self._fns = []
-    
+
+        # If a file is provided, read the data and populate the lists
+        if file is not None:
+            self._results = pd.read_csv(file)
+
+            # Populate the lists with data from the dataframe
+            self._epochs = self._results['epoch'].tolist()
+            self._train_losses = self._results['train_loss'].tolist()
+            self._test_losses = self._results['test_loss'].tolist()
+            self._tps = self._results['tp'].tolist()
+            self._fps = self._results['fp'].tolist()
+            self._tns = self._results['tn'].tolist()
+            self._fns = self._results['fn'].tolist()
+
     def get(self):
-        
         if self._results is not None:
-            
+            # Create data array and add to dataframe
             data = np.empty((7, len(self._epochs)))
-            
-            data[0,:] = [epoch + len(self._results['epoch']) for epoch in self._epochs]
-            data[1,:] = self._train_losses
-            data[2,:] = self._test_losses
+            data[0, :] = [epoch + len(self._results['epoch']) for epoch in self._epochs]
+            data[1, :] = self._train_losses
+            data[2, :] = self._test_losses
             data[3, :] = self._tps
             data[4, :] = self._fps
             data[5, :] = self._tns
             data[6, :] = self._fns
-            
+
+            # Concatenate new data with existing DataFrame
             self._results = pd.concat([self._results, pd.DataFrame(data.T, columns=self._results.columns)], ignore_index=True)
-            
+        
         else:
+            # If no previous results, create new DataFrame
             results = {
                 'epoch': self._epochs,
                 'train_loss': self._train_losses,
@@ -45,70 +53,69 @@ class Results:
                 'tn': self._tns,
                 'fn': self._fns
             }
-                        
             self._results = pd.DataFrame(results)
         
         return self._results
     
     # Property and setter for train_losses
     @property
-    def train_loss(self):
+    def train_losses(self):
         return self._train_losses
     
-    @train_loss.setter
-    def train_loss(self, value):
+    @train_losses.setter
+    def train_losses(self, value):
         self._train_losses.append(value)
 
     # Property and setter for test_losses
     @property
-    def test_loss(self):
+    def test_losses(self):
         return self._test_losses
     
-    @test_loss.setter
-    def test_loss(self, value):
+    @test_losses.setter
+    def test_losses(self, value):
         self._test_losses.append(value)
 
     # Property and setter for epochs
     @property
-    def epoch(self):
+    def epochs(self):
         return self._epochs
     
-    @epoch.setter
-    def epoch(self, value):
+    @epochs.setter
+    def epochs(self, value):
         self._epochs.append(value)
 
     # Property and setter for true positives (tp)
     @property
-    def tp(self):
+    def tps(self):
         return self._tps
     
-    @tp.setter
-    def tp(self, value):
+    @tps.setter
+    def tps(self, value):
         self._tps.append(value)
 
     # Property and setter for false positives (fp)
     @property
-    def fp(self):
+    def fps(self):
         return self._fps
     
-    @fp.setter
-    def fp(self, value):
+    @fps.setter
+    def fps(self, value):
         self._fps.append(value)
 
     # Property and setter for true negatives (tn)
     @property
-    def tn(self):
+    def tns(self):
         return self._tns
     
-    @tn.setter
-    def tn(self, value):
+    @tns.setter
+    def tns(self, value):
         self._tns.append(value)
 
     # Property and setter for false negatives (fn)
     @property
-    def fn(self):
+    def fns(self):
         return self._fns
     
-    @fn.setter
-    def fn(self, value):
+    @fns.setter
+    def fns(self, value):
         self._fns.append(value)
