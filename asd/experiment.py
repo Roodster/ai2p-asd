@@ -88,7 +88,10 @@ class Experiment:
         with th.no_grad():
             for batch_data, batch_labels in test_loader:
                 batch_data, batch_labels = batch_data.to(self.device), batch_labels.to(self.device)
-                outputs = (self.learner.model(batch_data) > 0.5).float()
+                outputs = (self.learner.model(batch_data) > 0.5).int()
+                print(f'SHAPE LABELS {outputs.shape}')
+                outputs = (self.learner.model(batch_data) > 0.5).int()
+                print(f'SHAPE OUTPUTS {outputs.shape}')
                 loss = self.learner.compute_loss(y_pred=outputs, y_test=batch_labels)   
                 tn, fp, fn, tp = np.sum(multilabel_confusion_matrix(batch_labels, outputs),axis=0).ravel()
                 
