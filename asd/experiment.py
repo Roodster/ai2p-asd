@@ -97,7 +97,8 @@ class Experiment:
                 metrics['fn'] += fn
                 metrics['tn'] += tn   
                 metrics['loss'] += loss
-                                
+            
+        print('metrics: \n',metrics)       
         self.results.tps = metrics['tp']
         self.results.fps = metrics['fp']
         self.results.fns = metrics['fn']

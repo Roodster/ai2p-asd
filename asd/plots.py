@@ -13,22 +13,34 @@ class Plots:
             or use "update=False" if this is the final call (otherwise there will be double plotting). """
         # Smooth curves
 
-        window = max(int(len(results.epochs) / 50), 1)
+
+        print("\n", results.get())
+        window = max(len(results.epochs), 1)
         
-        if len(results.epochs) < window + 2: return
+        if len(results.epochs) < window + 1: return
         epochs = np.convolve(results.epochs, np.ones(window)/window, 'valid')
         train_losses = np.convolve(results.train_losses, np.ones(window)/window, 'valid')
         test_losses = np.convolve(results.test_losses, np.ones(window)/window, 'valid')
+
+        print('tps: ', results.tps)
+        print('fps: ', results.fps)
+        print('fns: ', results.fns) 
 
         tps = np.convolve(results.tps, np.ones(window)/window, 'valid')
         fps = np.convolve(results.fps, np.ones(window)/window, 'valid')
         tns = np.convolve(results.tns, np.ones(window)/window, 'valid')
         fns = np.convolve(results.fns, np.ones(window)/window, 'valid')
         
-        sensitivities = (tps / (tps + fns))
-        precisions = (tps / (tps + fps))
-        f1s = 2 * (precisions * sensitivities) / (precisions + sensitivities)
         
+        print('tps: ', tps)
+        print('fps: ', fps)
+        print('fns: ', fns)        
+        sensitivities = (tps / (tps + fns))
+        print('sens: ', sensitivities)
+        precisions = (tps / (tps + fps))
+        print('prec: ', precisions)
+        f1s = 2 * (precisions * sensitivities) / (precisions + sensitivities)
+        print('f1: ', f1s)
 
         # Determine x-axis based on samples or episodes
         # Create plot
