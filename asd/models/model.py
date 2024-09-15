@@ -22,13 +22,13 @@ class DummyModel(BaseModel):
     
     def __init__(self, args):
         super(DummyModel, self).__init__(args=args)
-        self.conv1 = nn.Conv2d(4, 4, kernel_size=(2, 1), padding=(1, 0))
-        self.conv2 = nn.Conv2d(4, 4, kernel_size=(2, 1), padding=(1, 0))
-        self.conv3 = nn.Conv2d(4, 4, kernel_size=(2, 1), padding=(1, 0))
+        self.conv1 = nn.Conv2d(4, 32, kernel_size=(2, 1), padding=(1, 0))
+        self.conv2 = nn.Conv2d(32, 64, kernel_size=(2, 1), padding=(1, 0))
+        self.conv3 = nn.Conv2d(64, 64, kernel_size=(2, 1), padding=(1, 0))
         self.pool = nn.MaxPool2d((2, 1))
         self.adaptive_pool = nn.AdaptiveAvgPool2d((2, 1))
-        self.fc1 = nn.Linear(4 * 2, 4)
-        self.fc2 = nn.Linear(4, 1)
+        self.fc1 = nn.Linear(64 * 2, 32)
+        self.fc2 = nn.Linear(32, 1)
         self.dropout = nn.Dropout(0.5)
 
     def forward(self, x):

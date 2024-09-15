@@ -90,3 +90,5 @@ def save_spectrograms_and_labels(spectrograms, labels, save_dir, filename):
         save_file = f"{a}_{index}.npz"
          
         np.savez(os.path.join(save_dir, save_file.replace('+', '')), x=spectrogram, y=label, allow_pickle=True)
+
+

@@ -7,6 +7,7 @@ from asd.writer import Writer
 from asd.results import Results
 from asd.models.model import DummyModel, CNNBiLSTM
 from asd.learner import Learner
+from asd.plots import Plots
 from asd.experiment import Experiment
 import torch as th
 import torch.nn as nn
@@ -21,8 +22,8 @@ def main():
     args = Args(file="./data/configs/default.yaml")
     
     # Load dataset
-    train_dataset = OfflineSegmentsDataset("./data/dataset/train/preprocessed/", mode='train', patient_id=args.patient_id)
-    test_dataset = OnlineSegmentsDataset("./data/dataset/train/preprocessed/", mode='test', patient_id=args.patient_id)
+    train_dataset = OfflineSegmentsDataset("./data/dataset/train/filtered/", mode='train', patient_id=args.patient_id)
+    test_dataset = OfflineSegmentsDataset("./data/dataset/test/chb01/", mode='test', patient_id=args.patient_id)
     
     # Instantiate dataloaders 
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=4)
@@ -41,6 +42,7 @@ def main():
     criterion = nn.BCELoss()
     
     results = Results()
+    plots = Plots()
     
     
     learner = Learner(args=args, 
@@ -52,7 +54,8 @@ def main():
     experiment = Experiment(args=args, 
                             learner=learner,
                             writer=writer,
-                            results=results)
+                            results=results,
+                            plots=plots)
     
     
     experiment.run(train_loader=train_loader, test_loader=test_loader)

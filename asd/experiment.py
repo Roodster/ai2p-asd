@@ -7,7 +7,7 @@ from tqdm import tqdm
 class Experiment:
     
     
-    def __init__(self, args, learner, writer, results):
+    def __init__(self, args, learner, writer, results, plots):
         assert learner is not None, "NO learner"
         assert writer is not None, "Running an experiment without loggin is a futile endeavor."
         assert results is not None, "Running an experiment without logging is a futile endeavor."
@@ -18,8 +18,9 @@ class Experiment:
         self.learner = learner
         self.writer = writer
         self.results = results
+        self.plots = plots
         
-        self.start_epochs = len(self.results.epoch)
+        self.start_epochs = len(self.results.epochs)
         
          # ===== TRAINING =====
         self.device = args.device
@@ -60,12 +61,15 @@ class Experiment:
             
             if (epoch + 1) % self.eval_interval == 0: 
                 self.evaluate_samples(test_loader)
-                self.results.train_loss = train_loss.detach().numpy()
-                self.results.epoch = epoch+1
+                self.results.train_losses = train_loss.detach().numpy()
+                self.results.epochs = epoch+1
             
             if (epoch + 1) % self.save_model_interval == 0:
                 self.writer.save_model(self.learner.model, epoch+1)        
     
+            self.plots.plot(self.results)
+    
+        self.plots.plot(self.results, update=False)
         self.writer.save_statistics(self.results.get())
                 
 
@@ -99,9 +103,9 @@ class Experiment:
                 metrics['tn'] += tn   
                 metrics['loss'] += loss
                                 
-        self.results.tp = metrics['tp']
-        self.results.fp = metrics['fp']
-        self.results.fn = metrics['fn']
-        self.results.tn = metrics['tn']
-        self.results.test_loss = metrics['loss'].detach().numpy()
+        self.results.tps = metrics['tp']
+        self.results.fps = metrics['fp']
+        self.results.fns = metrics['fn']
+        self.results.tns = metrics['tn']
+        self.results.test_losses = metrics['loss'].detach().numpy()
              
