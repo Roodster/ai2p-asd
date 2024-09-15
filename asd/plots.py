@@ -13,7 +13,7 @@ class Plots:
             or use "update=False" if this is the final call (otherwise there will be double plotting). """
         # Smooth curves
 
-        window = max(int(len(results.epochs) / 10), 1)
+        window = max(int(len(results.epochs) / 50), 1)
         
         if len(results.epochs) < window + 2: return
         epochs = np.convolve(results.epochs, np.ones(window)/window, 'valid')
@@ -46,8 +46,8 @@ class Plots:
         ax.plot(epochs, train_losses, colors[0], label='train')
         ax.plot(epochs, test_losses, colors[2], label='test')
         ax.legend()
-        ax.xlabel('Epochs')
-        ax.ylabel('Loss')
+        ax.set_xlabel('Epochs')
+        ax.set_ylabel('Loss')
         # ax.plot(env_steps, lengths, colors[0])
         # ax.set_xlabel('environment steps' if self.plot_train_samples else 'episodes')
         # ax.set_ylabel('episode length')
