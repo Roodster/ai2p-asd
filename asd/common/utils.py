@@ -43,7 +43,6 @@ def load_spectrograms_and_labels(load_dir, filename):
     :return: tuple of (spectrograms, labels)
     """
     data = np.load(os.path.join(load_dir, ), allow_pickle=True)
-    print(f"Loaded spectrograms and labels from {load_dir}")
 
     return data
 

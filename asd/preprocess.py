@@ -280,10 +280,4 @@ if __name__ == "__main__":
 
             
         save_spectrograms_and_labels(X, y, save_dir=save_dir, filename=filename)
-        
-
-
-    # print(f"Number of segments: {len(spectrograms)}")
-    # print(f"Spectrogram shape: {spectrograms[0].shape}")
-    # print(f"Segment labels shape: {segment_labels.shape}")
     
