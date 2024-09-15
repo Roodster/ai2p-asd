@@ -41,27 +41,25 @@ class Plots:
         plt.clf()
 
         # Plot the losses in the left subplot
-        ax = plt.subplot(1, n_plots, 2)
-        ax.set_title(label="Train/Test Loss")
-        ax.plot(epochs, train_losses, colors[0], label='train')
-        ax.plot(epochs, test_losses, colors[2], label='test')
-        ax.legend()
-        ax.set_xlabel('Epochs')
-        ax.set_ylabel('Loss')
+        ax1 = plt.subplot(1, n_plots, 2)
+        ax1.set_title(label="Train/Test Loss")
+        ax1.plot(epochs, train_losses, colors[0], label='train')
+        ax1.plot(epochs, test_losses, colors[2], label='test')
+        ax1.legend()
+        ax1.set_xlabel('Epochs')
+        ax1.set_ylabel('Loss')
         # ax.plot(env_steps, lengths, colors[0])
         # ax.set_xlabel('environment steps' if self.plot_train_samples else 'episodes')
         # ax.set_ylabel('episode length')
         # # Plot the metrics in the right subplot
-        ax = plt.subplot(1, n_plots, 2)
-        ax.set_title(label="Performance metrics")
-        ax.plot(epochs, sensitivities, colors[0], label='sensitivity')
-        ax.plot(epochs, precisions, colors[1], label='precision')
-        ax.plot(epochs, f1s, colors[2], label='f1-measure')
-        ax.legend()
-        ax.set_xlabel('Epochs')
-        ax.set_ylabel('Metrics')
-
-
+        ax2 = plt.subplot(1, n_plots, 2)
+        ax2.set_title(label="Performance metrics")
+        ax2.plot(epochs, sensitivities, colors[0], label='sensitivity')
+        ax2.plot(epochs, precisions, colors[1], label='precision')
+        ax2.plot(epochs, f1s, colors[2], label='f1-measure')
+        ax2.legend()
+        ax2.set_xlabel('Epochs')
+        ax2.set_ylabel('Metrics')
 
 
         if update:
