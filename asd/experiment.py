@@ -49,11 +49,6 @@ class Experiment:
             
             i = 0
             for batch_data, batch_labels in train_loader:
-                            
-                if i >= 1:
-                    break
-                
-                i += 1
                 outputs = self.learner.predict(batch_data)
                 loss = self.learner.compute_loss(y_pred=outputs, y_test=batch_labels)    
                 self.learner.update(loss)

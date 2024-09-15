@@ -15,10 +15,6 @@ class Plots:
 
         window = max(int(len(results.epochs) / 10), 1)
         
-        print(window)
-
-
-        print("RESULTS:\n ", results.get())
         if len(results.epochs) < window + 2: return
         epochs = np.convolve(results.epochs, np.ones(window)/window, 'valid')
         train_losses = np.convolve(results.train_losses, np.ones(window)/window, 'valid')
@@ -72,7 +68,6 @@ class Plots:
         
         else:
             # save figure
-            self.writer.save_plots(fig, "train_ret_rew_loss")
             plt.show()
 
 
