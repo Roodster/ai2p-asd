@@ -13,7 +13,7 @@ class Plots:
             or use "update=False" if this is the final call (otherwise there will be double plotting). """
         # Smooth curves
 
-        window = max(int(len(results.epochs) / 50), 2)
+        window = 2
         
         if len(results.epochs) < window + 1: return
         epochs = np.convolve(results.epochs, np.ones(window)/window, 'valid')
