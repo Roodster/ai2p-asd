@@ -41,7 +41,7 @@ class Plots:
         plt.clf()
 
         # Plot the losses in the left subplot
-        plt.subplot(1, n_plots, 2)
+        plt.subplot(1, n_plots, 1)
         plt.title(label="Train/Test Loss")
         plt.plot(epochs, train_losses, colors[0], label='train')
         plt.plot(epochs, test_losses, colors[2], label='test')
