@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from sklearn.preprocessing import normalize
 
 class Results:
     def __init__(self, file=None):
@@ -60,7 +61,7 @@ class Results:
     # Property and setter for train_losses
     @property
     def train_losses(self):
-        return self._train_losses
+        return normalize(np.array(self._train_losses), axis=0).ravel()
     
     @train_losses.setter
     def train_losses(self, value):
@@ -69,7 +70,7 @@ class Results:
     # Property and setter for test_losses
     @property
     def test_losses(self):
-        return self._test_losses
+        return normalize(np.array(self._test_losses), axis=0).ravel()
     
     @test_losses.setter
     def test_losses(self, value):

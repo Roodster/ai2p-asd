@@ -41,12 +41,13 @@ class Plots:
         plt.clf()
 
         # Plot the losses in the left subplot
-        plt.subplot(1, n_plots, 1)
-        plt.title(label="Train/Test Loss")
-        plt.plot(epochs, train_losses, colors[0], label='train')
-        plt.plot(epochs, test_losses, colors[2], label='test')
-        plt.xlabel('Epochs')
-        plt.ylabel('Loss')
+        ax = plt.subplot(1, n_plots, 2)
+        ax.title(label="Train/Test Loss")
+        ax.plot(epochs, train_losses, colors[0], label='train')
+        ax.plot(epochs, test_losses, colors[2], label='test')
+        ax.legend
+        ax.xlabel('Epochs')
+        ax.ylabel('Loss')
         # ax.plot(env_steps, lengths, colors[0])
         # ax.set_xlabel('environment steps' if self.plot_train_samples else 'episodes')
         # ax.set_ylabel('episode length')
@@ -57,8 +58,8 @@ class Plots:
         ax.plot(epochs, precisions, colors[1], label='precision')
         ax.plot(epochs, f1s, colors[2], label='f1-measure')
         ax.legend()
-        ax.set_xlabel('environment steps')
-        ax.set_ylabel('loss')
+        ax.set_xlabel('Epochs')
+        ax.set_ylabel('Metrics')
 
 
 
