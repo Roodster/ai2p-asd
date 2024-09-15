@@ -61,7 +61,7 @@ class Results:
     # Property and setter for train_losses
     @property
     def train_losses(self):
-        return normalize(np.array(self._train_losses), axis=0).ravel()
+        return normalize(np.array(self._train_losses).reshape(-1, 1), axis=0).ravel()
     
     @train_losses.setter
     def train_losses(self, value):
@@ -70,7 +70,7 @@ class Results:
     # Property and setter for test_losses
     @property
     def test_losses(self):
-        return normalize(np.array(self._test_losses), axis=0).ravel()
+        return normalize(np.array(self._test_losses).reshape(-1, 1), axis=0).ravel()
     
     @test_losses.setter
     def test_losses(self, value):
