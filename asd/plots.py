@@ -47,9 +47,6 @@ class Plots:
         plt.legend()
         plt.xlabel('Epochs')
         plt.ylabel('Loss')
-        # ax.plot(env_steps, lengths, colors[0])
-        # ax.set_xlabel('environment steps' if self.plot_train_samples else 'episodes')
-        # ax.set_ylabel('episode length')
         # # Plot the metrics in the right subplot
         plt.subplot(1, n_plots, 2)
         plt.title(label="Performance metrics")
