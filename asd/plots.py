@@ -22,9 +22,9 @@ class Plots:
         train_losses = np.convolve(results.train_losses, np.ones(window)/window, 'valid')
         test_losses = np.convolve(results.test_losses, np.ones(window)/window, 'valid')
 
-        print('tps: ', results.tps)
-        print('fps: ', results.fps)
-        print('fns: ', results.fns) 
+        print('result tps: ', results.tps)
+        print('result fps: ', results.fps)
+        print('result fns: ', results.fns) 
 
         tps = np.convolve(results.tps, np.ones(window)/window, 'valid')
         fps = np.convolve(results.fps, np.ones(window)/window, 'valid')
