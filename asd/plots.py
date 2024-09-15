@@ -15,7 +15,7 @@ class Plots:
 
 
         print("\n", results.get())
-        window = max(len(results.epochs), 1)
+        window = max(len(results.epochs) / 50 , 1)
         
         if len(results.epochs) < window + 1: return
         epochs = np.convolve(results.epochs, np.ones(window)/window, 'valid')
