@@ -1,6 +1,6 @@
 import numpy as np
 import torch as th
-from sklearn.metrics import multilabel_confusion_matrix
+from sklearn.metrics import multilabel_confusion_matrix, confusion_matrix
 from tqdm import tqdm
 
 
@@ -88,13 +88,10 @@ class Experiment:
         with th.no_grad():
             for batch_data, batch_labels in test_loader:
                 batch_data, batch_labels = batch_data.to(self.device), batch_labels.to(self.device)
-                print(f'SHAPE LABELS {batch_labels.shape}')
-                print(f'batch_labels:\n {batch_labels}')
                 outputs = (self.learner.model(batch_data) > 0.5).float()
-                print(f'SHAPE OUTPUTS {outputs.shape}')
-                print(f'OUTPUTS:\n {outputs}')
                 loss = self.learner.compute_loss(y_pred=outputs, y_test=batch_labels)   
-                tn, fp, fn, tp = np.sum(multilabel_confusion_matrix(batch_labels, outputs),axis=0).ravel()
+                # tn, fp, fn, tp = np.sum(multilabel_confusion_matrix(batch_labels, outputs),axis=0).ravel()
+                tn, fp, fn, tp = confusion_matrix(y_true=batch_labels, y_pred=outputs)
                 print(tn, fp, fn, tp)
                 metrics['tp'] += tp
                 metrics['fp'] += fp
