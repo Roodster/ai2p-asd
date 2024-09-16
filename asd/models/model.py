@@ -53,11 +53,11 @@ class CNNBiLSTM(BaseModel):
         super(CNNBiLSTM, self).__init__(args=args)
         
         # Define CNN layers
-        self.conv1 = nn.Conv2d(4, 64, kernel_size=(3, 3), padding=(1, 0))
-        self.conv2 = nn.Conv2d(64, 64, kernel_size=(3, 3), padding=(1, 0))
-        self.conv3 = nn.Conv2d(64, 64, kernel_size=(3, 3), padding=(1, 0))
-        self.pool = nn.MaxPool2d((3, 3))
-        self.adaptive_pool = nn.AdaptiveAvgPool2d((3, 3))
+        self.conv1 = nn.Conv2d(4, 64, kernel_size=(3, 1), padding=(1, 0))
+        self.conv2 = nn.Conv2d(64, 64, kernel_size=(3, 1), padding=(1, 0))
+        self.conv3 = nn.Conv2d(64, 64, kernel_size=(3, 1), padding=(1, 0))
+        self.pool = nn.MaxPool2d((3, 1))
+        self.adaptive_pool = nn.AdaptiveAvgPool2d((3, 1))
 
         # LSTM parameters
         self.lstm_input_size = 64  # Based on CNN output channels
