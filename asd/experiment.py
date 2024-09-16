@@ -92,7 +92,7 @@ class Experiment:
                 outputs = (self.learner.model(batch_data) > 0.5).float()
                 loss = self.learner.compute_loss(y_pred=outputs, y_test=batch_labels)   
                 # tn, fp, fn, tp = np.sum(multilabel_confusion_matrix(batch_labels, outputs),axis=0).ravel()
-                tn, fp, fn, tp = confusion_matrix(y_true=batch_labels, y_pred=outputs, labels=[0,1]).ravel()
+                tn, fp, fn, tp = confusion_matrix(y_true=batch_labels.cpu().data.numpy(), y_pred=outputs.cpu().data.numpy(), labels=[0,1]).ravel()
                 metrics['tp'] += tp
                 metrics['fp'] += fp
                 metrics['fn'] += fn
