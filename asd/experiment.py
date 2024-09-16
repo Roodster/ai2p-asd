@@ -97,11 +97,11 @@ class Experiment:
                 metrics['fp'] += fp
                 metrics['fn'] += fn
                 metrics['tn'] += tn   
-                metrics['loss'] += loss
+                metrics['loss'] += loss.detatch().cpu().numpy()
             
         self.results.tps = metrics['tp']
         self.results.fps = metrics['fp']
         self.results.fns = metrics['fn']
         self.results.tns = metrics['tn']
-        self.results.test_losses = metrics['loss'].detach().numpy()
+        self.results.test_losses = metrics['loss']
              
