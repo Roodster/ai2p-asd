@@ -57,7 +57,7 @@ class Experiment:
             
             if (epoch + 1) % self.eval_interval == 0: 
                 self.evaluate_samples(test_loader)
-                self.results.train_losses = train_loss.detach().numpy()
+                self.results.train_losses = train_loss.detach().cpu().numpy()
                 self.results.epochs = epoch+1
             
             if (epoch + 1) % self.save_model_interval == 0:
