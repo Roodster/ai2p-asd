@@ -53,11 +53,11 @@ class CNNBiLSTM(BaseModel):
         super(CNNBiLSTM, self).__init__(args=args)
         
         # Define CNN layers
-        self.conv1 = nn.Conv2d(4, 64, kernel_size=(3, 1), padding=(1, 0))
-        self.conv2 = nn.Conv2d(64, 32, kernel_size=(3, 1), padding=(1, 0))
-        self.conv3 = nn.Conv2d(32, 16, kernel_size=(3, 1), padding=(1, 0))
-        self.pool = nn.MaxPool2d((3, 1))
-        self.adaptive_pool = nn.AdaptiveAvgPool2d((3, 1))
+        self.conv1 = nn.Conv2d(4, 64, kernel_size=(3, 1), padding=(1, 0)).to(self.device)
+        self.conv2 = nn.Conv2d(64, 32, kernel_size=(3, 1), padding=(1, 0)).to(self.device)
+        self.conv3 = nn.Conv2d(32, 16, kernel_size=(3, 1), padding=(1, 0)).to(self.device)
+        self.pool = nn.MaxPool2d((3, 1)).to(self.device)
+        self.adaptive_pool = nn.AdaptiveAvgPool2d((3, 1)).to(self.device)
 
         # LSTM parameters
         self.lstm_input_size = 16  # Based on CNN output channels
@@ -69,12 +69,12 @@ class CNNBiLSTM(BaseModel):
                               hidden_size=self.hidden_size, 
                               num_layers=self.num_layers, 
                               batch_first=True, 
-                              bidirectional=True)
+                              bidirectional=True).to(self.device)
 
         # Fully connected layers
-        self.fc1 = nn.Linear(self.hidden_size * 2, 32)  # Bi-directional, hence *2
-        self.fc2 = nn.Linear(32, 1)
-        self.dropout = nn.Dropout(0.5)
+        self.fc1 = nn.Linear(self.hidden_size * 2, 32).to(self.device)  # Bi-directional, hence *2
+        self.fc2 = nn.Linear(32, 1).to(self.device)
+        self.dropout = nn.Dropout(0.5).to(self.device)
 
     def forward(self, x):
         print(x.get_device())
