@@ -80,7 +80,6 @@ class CNNBiLSTM(BaseModel):
         print('x: ', x.get_device())
         x = x.to(self.device)
         print('x: ', x.get_device())
-        print('self: ', self.get_device())
 
         # Pass input through CNN layers
         x = th.relu(self.conv1(x))
