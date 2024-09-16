@@ -22,8 +22,8 @@ class DummyModel(BaseModel):
     
     def __init__(self, args):
         super(DummyModel, self).__init__(args=args)
-        self.conv1 = nn.Conv2d(4, 32, kernel_size=(2, 1), padding=(1, 0))
-        self.conv2 = nn.Conv2d(32, 64, kernel_size=(2, 1), padding=(1, 0))
+        self.conv1 = nn.Conv2d(4, 64, kernel_size=(2, 1), padding=(1, 0))
+        self.conv2 = nn.Conv2d(64, 64, kernel_size=(2, 1), padding=(1, 0))
         self.conv3 = nn.Conv2d(64, 64, kernel_size=(2, 1), padding=(1, 0))
         self.pool = nn.MaxPool2d((2, 1))
         self.adaptive_pool = nn.AdaptiveAvgPool2d((2, 1))
@@ -50,16 +50,16 @@ class CNNBiLSTM(BaseModel):
         super(CNNBiLSTM, self).__init__(args=args)
         
         # Define CNN layers
-        self.conv1 = nn.Conv2d(4, 4, kernel_size=(2, 1), padding=(1, 0))
-        self.conv2 = nn.Conv2d(4, 4, kernel_size=(2, 1), padding=(1, 0))
-        self.conv3 = nn.Conv2d(4, 4, kernel_size=(2, 1), padding=(1, 0))
-        self.pool = nn.MaxPool2d((2, 1))
-        self.adaptive_pool = nn.AdaptiveAvgPool2d((2, 1))
+        self.conv1 = nn.Conv2d(4, 64, kernel_size=(3, 3), padding=(1, 0))
+        self.conv2 = nn.Conv2d(64, 64, kernel_size=(3, 3), padding=(1, 0))
+        self.conv3 = nn.Conv2d(64, 64, kernel_size=(3, 3), padding=(1, 0))
+        self.pool = nn.MaxPool2d((3, 3))
+        self.adaptive_pool = nn.AdaptiveAvgPool2d((3, 3))
 
         # LSTM parameters
-        self.lstm_input_size = 4  # Based on CNN output channels
+        self.lstm_input_size = 64  # Based on CNN output channels
         self.hidden_size = 64     # LSTM hidden state size
-        self.num_layers = 1       # Number of LSTM layers
+        self.num_layers = 3       # Number of LSTM layers
 
         # Define Bidirectional LSTM
         self.bilstm = nn.LSTM(input_size=self.lstm_input_size, 
@@ -69,8 +69,8 @@ class CNNBiLSTM(BaseModel):
                               bidirectional=True)
 
         # Fully connected layers
-        self.fc1 = nn.Linear(self.hidden_size * 2, 4)  # Bi-directional, hence *2
-        self.fc2 = nn.Linear(4, 1)
+        self.fc1 = nn.Linear(self.hidden_size * 2, 32)  # Bi-directional, hence *2
+        self.fc2 = nn.Linear(32, 1)
         self.dropout = nn.Dropout(0.5)
 
     def forward(self, x):
