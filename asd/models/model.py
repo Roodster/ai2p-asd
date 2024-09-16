@@ -6,17 +6,19 @@ import torch as th
 class Model:
     
     @classmethod
-    def create(cls, name='dummy'):
-        if name == 'dummy':
-            return DummyModel()
-        elif name == 'cnn-bilstm':
-            return CNNBiLSTM()
+    def create(cls, args):
+        if args.model_name == 'dummy':
+            return DummyModel(args)
+        elif args.model_name == 'cnn-bilstm':
+            return CNNBiLSTM(args)
 
 
 class BaseModel(nn.Module):
     def __init__(self, args):
         super(BaseModel, self).__init__()
         self.args = args
+        self.device = args.device
+        self.to(args.device)
     
 class DummyModel(BaseModel):
     
@@ -32,6 +34,7 @@ class DummyModel(BaseModel):
         self.dropout = nn.Dropout(0.5)
 
     def forward(self, x):
+        x = x.to(self.device)
         x = th.relu(self.conv1(x))          
         x = th.relu(self.conv2(x))          
         x = th.relu(self.conv3(x))          
@@ -74,6 +77,7 @@ class CNNBiLSTM(BaseModel):
         self.dropout = nn.Dropout(0.5)
 
     def forward(self, x):
+        x = x.to(self.device)
         # Pass input through CNN layers
         x = th.relu(self.conv1(x))
         x = th.relu(self.conv2(x))
