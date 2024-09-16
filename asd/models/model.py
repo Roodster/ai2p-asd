@@ -77,7 +77,10 @@ class CNNBiLSTM(BaseModel):
         self.dropout = nn.Dropout(0.5)
 
     def forward(self, x):
+        print(x.get_device())
         x = x.to(self.device)
+        print(x.get_device())
+
         # Pass input through CNN layers
         x = th.relu(self.conv1(x))
         x = th.relu(self.conv2(x))
