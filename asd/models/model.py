@@ -54,13 +54,13 @@ class CNNBiLSTM(BaseModel):
         
         # Define CNN layers
         self.conv1 = nn.Conv2d(4, 64, kernel_size=(3, 1), padding=(1, 0))
-        self.conv2 = nn.Conv2d(64, 64, kernel_size=(3, 1), padding=(1, 0))
-        self.conv3 = nn.Conv2d(64, 64, kernel_size=(3, 1), padding=(1, 0))
+        self.conv2 = nn.Conv2d(64, 32, kernel_size=(3, 1), padding=(1, 0))
+        self.conv3 = nn.Conv2d(32, 16, kernel_size=(3, 1), padding=(1, 0))
         self.pool = nn.MaxPool2d((3, 1))
         self.adaptive_pool = nn.AdaptiveAvgPool2d((3, 1))
 
         # LSTM parameters
-        self.lstm_input_size = 64  # Based on CNN output channels
+        self.lstm_input_size = 16  # Based on CNN output channels
         self.hidden_size = 64     # LSTM hidden state size
         self.num_layers = 3       # Number of LSTM layers
 
