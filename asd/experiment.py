@@ -49,7 +49,7 @@ class Experiment:
             
             i = 0
             for batch_data, batch_labels in train_loader:
-                batch_data, batch_labels = batch_data.to(args.device), batch_labels.to(args.device)
+                batch_data, batch_labels = batch_data.to(self.args.device), batch_labels.to(args.device)
                 outputs = self.learner.predict(batch_data)
                 loss = self.learner.compute_loss(y_pred=outputs, y_test=batch_labels)    
                 self.learner.update(loss)
