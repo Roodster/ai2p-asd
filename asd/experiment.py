@@ -104,4 +104,5 @@ class Experiment:
         self.results.fns = metrics['fn']
         self.results.tns = metrics['tn']
         self.results.test_losses = metrics['loss']
-             
+        
+        self.learner.model.train()
