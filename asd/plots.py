@@ -13,9 +13,9 @@ class Plots:
             or use "update=False" if this is the final call (otherwise there will be double plotting). """
         # Smooth curves
 
-        window = 2
+        window = 100
         
-        if len(results.epochs) < window + 1: return
+        if len(results.epochs) < 2: return
         epochs = np.convolve(results.epochs, np.ones(window)/window, 'valid')
         train_losses = np.convolve(results.train_losses, np.ones(window)/window, 'valid')
         test_losses = np.convolve(results.test_losses, np.ones(window)/window, 'valid')
