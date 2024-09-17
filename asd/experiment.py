@@ -60,7 +60,11 @@ class Experiment:
                 outputs = (outputs > 0.5).float()
                 
                 loss = self.learner.compute_loss(y_pred=outputs, y_test=batch_labels.float())    
-                self.learner.update(loss)
+                # self.learner.update(loss)
+                self.learner.optimizer.zero_grad()
+                loss.backward()
+                self.learner.optimizer.step()
+            
                 train_loss += loss
             
             if (epoch + 1) % self.eval_interval == 0: 
