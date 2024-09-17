@@ -47,7 +47,7 @@ class BandpassFilter(BaseEstimator, TransformerMixin):
     
     
 class SegmentSignals(BaseEstimator, TransformerMixin):
-    def __init__(self, fs=256, segment_length=1, overlap=0.5):
+    def __init__(self, fs=256, segment_length=1, overlap=0.5, mode='default'):
         """
         Segments EEG data into clips.
 
@@ -247,7 +247,11 @@ if __name__ == "__main__":
     from tqdm import tqdm
     from common.utils import load_edf_filepaths, clean_path, load_eeg_file, save_spectrograms_and_labels
     
-    files_list = load_edf_filepaths("./data/dataset/train/raw/")
+    
+    dataset_path = "./data/dataset/train/raw/"
+    dataset_save_root_path = "./data/dataset/test/signals/"
+    
+    files_list = load_edf_filepaths(dataset_path)
     
     
     pbar = tqdm(files_list)
@@ -265,15 +269,14 @@ if __name__ == "__main__":
         
         pipeline = Pipeline([('filters', BandpassFilter(sfreq=256,lowcut=1, highcut=40, order=6)),
                              ('normalizes',ZScoreNormalization()),
-                             ('segments', SegmentSignals(fs=256, segment_length=4, overlap=0)),
-                             ('spectogram', Spectrograms(fs=256, nperseg=4, noverlap=0)),
+                             ('segments', SegmentSignals(fs=256, segment_length=1, overlap=0)),
                             #  ('samples', BalanceSeizureSegments(random_state=42))
                              ]) 
         
         
         X, y = pipeline.transform(X=(eeg_data, labels))
-        save_dir, filename = clean_path(file, "./data/dataset/train/raw")
-        save_dir = "./data/dataset/test" + save_dir
+        save_dir, filename = clean_path(file, dataset_path)
+        save_dir = dataset_save_root_path + save_dir
         filename = filename.split('.')[0]        
         pbar.set_description(f"saved {filename} of size: {X.shape} to {save_dir}")
                 

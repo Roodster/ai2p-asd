@@ -3,6 +3,8 @@ import torch as th
 from sklearn.metrics import multilabel_confusion_matrix, confusion_matrix
 from tqdm import tqdm
 
+from asd.common.utils import set_seed
+
 
 class Experiment:
     
@@ -32,6 +34,10 @@ class Experiment:
         self.eval_interval = args.eval_interval
         assert args.eval_save_model_interval > 0, "Can't modulo by zero."
         self.save_model_interval = args.eval_save_model_interval
+        
+        
+        # ===== SEEDING =====
+        set_seed(args.seed)
     
     
     def run(self, train_loader, test_loader):
@@ -50,8 +56,10 @@ class Experiment:
             i = 0
             for batch_data, batch_labels in train_loader:
                 batch_data, batch_labels = batch_data.to(self.args.device), batch_labels.to(self.args.device)
-                outputs = self.learner.predict(batch_data)
-                loss = self.learner.compute_loss(y_pred=outputs, y_test=batch_labels)    
+                outputs = self.learner.predict(batch_data)            
+                outputs = (outputs > 0.5).float()
+                
+                loss = self.learner.compute_loss(y_pred=outputs, y_test=batch_labels.float())    
                 self.learner.update(loss)
                 train_loss += loss
             
