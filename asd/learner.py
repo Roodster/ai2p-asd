@@ -46,7 +46,10 @@ class Learner(BaseLearner):
         return loss
     
     def update(self, loss):
-        pass
+        self.optimizer.zero_grad()
+        loss.backward()
+        self.optimizer.step()
+            
     def predict(self, batch_data):
         outputs = self.model(batch_data)
         return outputs
