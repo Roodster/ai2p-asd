@@ -1,8 +1,9 @@
 import yaml
 import os
-import numpy as np
 import glob
-
+import random as rnd
+import numpy as np
+import torch as th
 import seizure_data_processing as sdp
 
 
@@ -91,3 +92,17 @@ def save_spectrograms_and_labels(spectrograms, labels, save_dir, filename):
         np.savez(os.path.join(save_dir, save_file.replace('+', '')), x=spectrogram, y=label, allow_pickle=True)
 
 
+def set_seed(seed):
+    """
+    For seed to some modules.
+    :param seed: int. The seed.
+    :return:
+    """
+    th.manual_seed(seed)
+    np.random.seed(seed)
+    rnd.seed(seed)
+    th.cuda.manual_seed(seed)
+    th.cuda.manual_seed_all(seed)
+    th.backends.cudnn.benchmark = False
+    th.backends.cudnn.deterministic = True
+    th.Generator().manual_seed(seed)

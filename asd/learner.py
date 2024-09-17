@@ -3,6 +3,8 @@ from tqdm import tqdm
 import os
 import numpy as np
 
+from torch.autograd import Variable
+
 class BaseLearner:
     
     
@@ -40,7 +42,7 @@ class Learner(BaseLearner):
         self.criterion = criterion
 
     def compute_loss(self, y_pred, y_test):
-        loss = self.criterion(y_pred, y_test)
+        loss =  Variable(self.criterion(y_pred, y_test), requires_grad = True)
         return loss
     
     def update(self, loss):

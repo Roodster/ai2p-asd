@@ -1,7 +1,10 @@
+import math
 import torch.nn as nn
 import torch as th
 
 
+from asd.models.transformer import VisionTransformer, SSLTransformer
+from asd.models.base import BaseModel
 
 class Model:
     
@@ -11,14 +14,10 @@ class Model:
             return DummyModel(args)
         elif args.model_name == 'cnn-bilstm':
             return CNNBiLSTM(args)
-
-
-class BaseModel(nn.Module):
-    def __init__(self, args):
-        super(BaseModel, self).__init__()
-        self.args = args
-        self.device = args.device
-        self.to(args.device)
+        elif args.model_name == 'transformer':
+            return VisionTransformer(args=args)
+        elif args.model_name == 'ssl-transformer':
+            return SSLTransformer(args=args)
     
 class DummyModel(BaseModel):
     

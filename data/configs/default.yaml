@@ -1,31 +1,23 @@
-
-
-
-
 ### METADATA
 exp_name: dev
 
 # ===== FILE HANDLING =====
 log_dir: ./logs
 
-
 # ===== EXPERIMENT ====
-model: cnn-bilstm
+model_name: transformer
 seed: 1
-
 
 ### ===== DATASET PARAMETERS =====
 patient_id: 1 # defines which patient to exclude for training/testing
 train_ratio: 0.7
 test_ratio: 0.3
 
-
 ### ===== TRAIN PARAMETERS =====
 device: cpu
-batch_size: 32
+batch_size: 4
 learning_rate: 0.001
-n_epochs: 20
-
+n_epochs: 1
 
 eval_save_model_interval: 1
 eval_interval: 1

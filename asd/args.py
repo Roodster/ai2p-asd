@@ -19,7 +19,7 @@ class Args():
         self.log_dir = self.config.get("log_dir", "./logs")
         
         # ===== MODEL =====
-        self.model = self.config.get("model", "dummy")
+        self.model_name = self.config.get("model_name", "dummy")
         
         # ===== DATASET =====
         self.patient_id = str(self.config.get("patient_id", 1)).zfill(2)
