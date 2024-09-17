@@ -53,7 +53,6 @@ class Experiment:
             
             train_loss = 0
             
-            i = 0
             for batch_data, batch_labels in train_loader:
                 batch_data, batch_labels = batch_data.to(self.args.device), batch_labels.to(self.args.device)
                 outputs = self.learner.predict(batch_data)
