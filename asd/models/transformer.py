@@ -1,16 +1,8 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import copy
-import logging
 import math
-
-from os.path import join as pjoin
 
 import torch as th
 import torch.nn as nn
-import numpy as np
 
 from torch.nn import CrossEntropyLoss, Dropout, Softmax, Linear, Conv2d, LayerNorm
 from torch.nn.modules.utils import _pair
@@ -292,3 +284,5 @@ class SSLTransformer(BaseModel):
         
         p1 = self.encoder1(x1)
         p2 = self.encoder2(x2) 
+        
+        return p1, p2
