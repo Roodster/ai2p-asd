@@ -62,31 +62,6 @@ def plot_scatter_plot(eeg_data, channel):
     plt.show()
 
 
-def clip_extremes(eeg_data, labels):
-    """
-    :param eeg_data: 2D numpy array of shape (channels, num_samples) - EEG data from multiple channels.
-    :param labels: 1D numpy array of size (num_samples) - Labels indicating seizure (1) or non-seizure (0) 
-                   for each sample (time point).
-    :return: 
-        - clipped_data: 2D numpy array of clipped EEG data, where extreme samples are removed.
-        - clipped_labels: 1D numpy array of labels corresponding to the valid samples from the EEG data.
-    """
-    threshold = 2
-    global_mean = np.mean(eeg_data)
-    global_std = np.std(eeg_data)
-    
-    # Define global clipping bounds based on the threshold
-    lower_bound = global_mean - threshold * global_std
-    upper_bound = global_mean + threshold * global_std
-    
-    valid_indices = np.all((eeg_data >= lower_bound) & (eeg_data <= upper_bound), axis=0)
-    
-    # Keep only valid samples (both EEG data and labels)
-    clipped_data = eeg_data[:, valid_indices]
-    clipped_labels = labels[valid_indices]
-    
-    return clipped_data, clipped_labels
-
 def normalize_eeg_data(eeg_data):
     """
     Normalize EEG data for each channel to have a mean of 0 and standard deviation of 1.
@@ -123,12 +98,11 @@ def remove_noise(eeg_data, fs, labels):
     highcut = 30.0
     filt_data = apply_bandpass_filter(eeg_data, lowcut, highcut, fs)
     print("Bandpass filtering done")
-    # clip_filt_data, labels2 = clip_extremes(filt_data, labels)
-    # print("Clipping done ", ())
-    normalized_data = normalize_eeg_data(filt_data)
-    print("Normalization done ", (len))
 
-    return normalized_data, labels
+    # normalized_data = normalize_eeg_data(filt_data)
+    print("Normalization done ")
+
+    return filt_data, labels
 
 
 def segment_and_spectrogram(eeg_data, labels, fs, segment_length=1, overlap=0.5):
@@ -155,7 +129,7 @@ def segment_and_spectrogram(eeg_data, labels, fs, segment_length=1, overlap=0.5)
     spectrograms = []
     segment_labels = []
     for i in range(n_segments):
-        # plot_scatter_plot(eeg_data, i)
+        plot_scatter_plot(eeg_data, i)
 
         start = i * step
         end = start + samples_per_segment
@@ -186,7 +160,7 @@ def segment_and_spectrogram(eeg_data, labels, fs, segment_length=1, overlap=0.5)
 def load_eeg_file():
     # Load a single file
     file = (
-            r".\ai2p-asd\data\chb13_21.edf")
+            r".\ai2p-asd\data\chb18_35.edf")
     channels = "FP1-F7;F7-T7;T7-P7;P7-O1;FP1-F3;F3-C3;C3-P3;P3-O1;FP2-F4;F4-C4;C4-P4;P4-O2;FP2-F8;F8-T8;T8-P8;T8-P8;P8-O2;FZ-CZ;CZ-PZ;P7-T7;T7-FT9;FT9-FT10;FT10-T8;T8-P8".split(";")
     eeg_file = sdp.EEG(file, channels=channels)
     
