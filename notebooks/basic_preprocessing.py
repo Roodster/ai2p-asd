@@ -95,14 +95,14 @@ def remove_noise(eeg_data, fs, labels):
         - labels: 1D numpy array of labels corresponding to the valid samples from the EEG data.
     """
     lowcut = 1.6
-    highcut = 30.0
+    highcut = 40.0
     filt_data = apply_bandpass_filter(eeg_data, lowcut, highcut, fs)
     print("Bandpass filtering done")
 
-    # normalized_data = normalize_eeg_data(filt_data)
+    normalized_data = normalize_eeg_data(filt_data)
     print("Normalization done ")
 
-    return filt_data, labels
+    return normalized_data
 
 
 def segment_and_spectrogram(eeg_data, labels, fs, segment_length=1, overlap=0.5):
@@ -129,7 +129,6 @@ def segment_and_spectrogram(eeg_data, labels, fs, segment_length=1, overlap=0.5)
     spectrograms = []
     segment_labels = []
     for i in range(n_segments):
-        plot_scatter_plot(eeg_data, i)
 
         start = i * step
         end = start + samples_per_segment
@@ -160,7 +159,7 @@ def segment_and_spectrogram(eeg_data, labels, fs, segment_length=1, overlap=0.5)
 def load_eeg_file():
     # Load a single file
     file = (
-            r".\ai2p-asd\data\chb18_35.edf")
+            r".\ai2p-asd\data\chb13_21.edf")
     channels = "FP1-F7;F7-T7;T7-P7;P7-O1;FP1-F3;F3-C3;C3-P3;P3-O1;FP2-F4;F4-C4;C4-P4;P4-O2;FP2-F8;F8-T8;T8-P8;T8-P8;P8-O2;FZ-CZ;CZ-PZ;P7-T7;T7-FT9;FT9-FT10;FT10-T8;T8-P8".split(";")
     eeg_file = sdp.EEG(file, channels=channels)
     
@@ -192,11 +191,9 @@ def load_spectrograms_and_labels(load_dir):
     data = np.load(os.path.join(load_dir, 'spectrograms.npz'), allow_pickle=True)
     print(f"Loaded spectrograms and labels from {load_dir}")
 
-    return data
+    return data# Example usage
 
 
-
-# Example usage
 if __name__ == "__main__":
     # Assume you have loaded your EEG data and labels
     # eeg_data shape: (n_channels, n_samples)
@@ -210,10 +207,10 @@ if __name__ == "__main__":
     eeg_data = eeg_file.data
     labels = eeg_file.get_labels()
     
-    fs = 256  # Sampling frequency in Hz
     
+    fs = 256  # Sampling frequency in Hz
 
-    denoised_data, labels = remove_noise(eeg_data, fs, labels)
+    denoised_data = remove_noise(eeg_data, fs, labels)
     # Segment and convert to spectrograms
     spectrograms, segment_labels = segment_and_spectrogram(denoised_data, labels, fs)
     
@@ -231,11 +228,12 @@ def plot_spectrogram(X):
     plt.xlabel('Time')
     plt.ylabel('Frequency')
     plt.show()
+
+
 # plt.specgram(spectrograms[0][0], Fs=6, cmap="rainbow")
 # plt.ylabel('Frequency [Hz]')
 # plt.xlabel('Time [sec]')
 # plt.show()
-
 
 
 save_spectrograms_and_labels(spectrograms, segment_labels, save_dir="./data/temp/")
