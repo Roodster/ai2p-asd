@@ -95,7 +95,9 @@ class Experiment:
             for batch_data, batch_labels in test_loader:
                 batch_data, batch_labels = batch_data.to(self.device), batch_labels.to(self.device)
                 outputs = self.learner.model(batch_data)
-                loss = self.learner.compute_loss(y_pred=outputs.float(), y_test=batch_labels.unsqueeze(1))   
+                outputs, batch_labels = outputs.float().to(self.device), batch_labels.unsqueeze(1).to(self.device)
+                
+                loss = self.learner.compute_loss(y_pred=outputs, y_test=batch_labels)   
                 # tn, fp, fn, tp = np.sum(multilabel_confusion_matrix(batch_labels, outputs),axis=0).ravel()
                 binary_predictions = (outputs > 0.5).int()
                 
