@@ -210,7 +210,7 @@ class Transformer(BaseModel):
 
 
 class VisionTransformer(BaseModel):
-    def __init__(self, args, img_size=256, num_classes=1, zero_head=False):
+    def __init__(self, args, img_size=256, num_classes=2, zero_head=False):
         super(VisionTransformer, self).__init__(args=args)
         self.num_classes = num_classes
         self.zero_head = zero_head
