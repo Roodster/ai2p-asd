@@ -39,7 +39,7 @@ def main():
     optimizer = th.optim.Adam(params=model.parameters(), 
                               lr=args.learning_rate)
     
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.BCEWithLogitsLoss()
     
     results = Results()
     plots = Plots()

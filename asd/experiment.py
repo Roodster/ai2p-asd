@@ -56,8 +56,7 @@ class Experiment:
             for batch_data, batch_labels in train_loader:
                 batch_data, batch_labels = batch_data.to(self.args.device), batch_labels.to(self.args.device)
                 outputs = self.learner.predict(batch_data)
-    
-                loss = self.learner.compute_loss(y_pred=outputs.float(), y_test=batch_labels.float())    
+                loss = self.learner.compute_loss(y_pred=outputs.float(), y_test=batch_labels.unsqueeze(1))    
                 self.learner.update(loss)
                 train_loss += loss
             
