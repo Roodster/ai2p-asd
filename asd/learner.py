@@ -51,7 +51,7 @@ class Learner(BaseLearner):
         self.optimizer.step()
             
     def predict(self, batch_data):
-        outputs = self.model(batch_data)
+        outputs = self.model(batch_data).to(self.args.device)
         return outputs
                 
     def reset(self):
