@@ -217,7 +217,7 @@ class VisionTransformer(BaseModel):
         # print(f"VisionTransformer {x.shape}")
         x = self.transformer(x)
         # print(f"VisionTransformer transformer {x.shape}")
-        logits = self.head(x[:, 0]).flatten()
+        logits = self.head(x[:, 0])
         # print(f"VisionTransformer logits {logits.shape}")
 
         if labels is not None:
