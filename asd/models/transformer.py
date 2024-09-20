@@ -78,7 +78,7 @@ class MLP(BaseModel):
 
     def forward(self, x):
         # print(f"MLP {x.shape}")
-
+        x = x.to(self.device)
         x = self.fc1(x)
         # print(f"MLP fc1 {x.shape}")
 
@@ -116,6 +116,7 @@ class Embeddings(BaseModel):
 
     def forward(self, x):
         # print(f"Embeddings input {x.shape}")
+        x = x.to(self.device)
         x = x.unsqueeze(1)
 
         B = x.shape[0]
@@ -147,6 +148,7 @@ class Block(BaseModel):
 
     def forward(self, x):
         # print(f"Block {x.shape}")
+        x = x.to(self.device)
 
         h = x
         # print(f"Block attention {x.shape}")
@@ -177,6 +179,7 @@ class Encoder(BaseModel):
 
     def forward(self, hidden_states):
         # print(f"Encoder {hidden_states.shape}")
+        hidden_states = hidden_states.to(self.device)
 
         for layer_block in self.layer:
             hidden_states = layer_block(hidden_states)
@@ -193,6 +196,8 @@ class Transformer(BaseModel):
         self.encoder = Encoder(args).to(self.device)
 
     def forward(self, input_ids):
+        input_ids = input_ids.to(self.device)
+
         # print(f"Transformer {input_ids.shape}")
 
         embedding_output = self.embeddings(input_ids)
@@ -214,6 +219,7 @@ class VisionTransformer(BaseModel):
         self.head = Linear(256, num_classes).to(self.device)
 
     def forward(self, x, labels=None):
+        x = x.to(self.device)
         # print(f"VisionTransformer {x.shape}")
         x = self.transformer(x)
         # print(f"VisionTransformer transformer {x.shape}")
@@ -247,7 +253,8 @@ class CutRearrange(BaseModel):
         self.n_segments = n_segments
         
     def forward(self, x):
-        
+        x = x.to(self.device)
+
         # Assuming x has shape (batch_size, 256) or (256,)
         if x.dim() == 1:
             x = x.unsqueeze(0)  # Add batch dimension if not present
@@ -278,7 +285,7 @@ class SSLTransformer(BaseModel):
         self.encoder2 = VisionTransformer(args=args)
         
     def forward(self, x):
-        
+
         x1 = self.gaussian_noise(x)
         x2 = self.cut_rearrange(x)
         
