@@ -22,9 +22,16 @@ class Plots:
 
         tps = np.convolve(results.tps, np.ones(window)/window, 'valid')
         fps = np.convolve(results.fps, np.ones(window)/window, 'valid')
-        tns = np.convolve(results.tns, np.ones(window)/window, 'valid')
+        # tns = np.convolve(results.tns, np.ones(window)/window, 'valid')
         fns = np.convolve(results.fns, np.ones(window)/window, 'valid')
-              
+        
+        
+        print(f'tps: {tps}')
+        print(f'fps: {fps}')
+        print(f'fns: {fns}')
+        
+        
+        
         sensitivities = (tps / (tps + fns))
         precisions = (tps / (tps + fps))
         f1s = 2 * (precisions * sensitivities) / (precisions + sensitivities)
