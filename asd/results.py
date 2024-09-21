@@ -4,8 +4,8 @@ from sklearn.preprocessing import normalize
 
 class Results:
     def __init__(self, file=None):
-        self._prev_results = None
         self._results = None
+        
         # Initialize lists
         self._epochs = []
         self._train_losses = []
@@ -17,7 +17,7 @@ class Results:
 
         # If a file is provided, read the data and populate the lists
         if file is not None:
-            self._prev_results = pd.read_csv(file)
+            self._results = pd.read_csv(file)
 
             # Populate the lists with data from the dataframe
             self._epochs = self._results['epoch'].tolist()
@@ -29,7 +29,7 @@ class Results:
             self._fns = self._results['fn'].tolist()
 
     def get(self):
-        if self._prev_results is not None:
+        if self._results is not None:
             # Create data array and add to dataframe
             data = np.empty((7, len(self._epochs)))
             data[0, :] = [epoch + len(self._results['epoch']) for epoch in self._epochs]
@@ -41,7 +41,7 @@ class Results:
             data[6, :] = self._fns
 
             # Concatenate new data with existing DataFrame
-            self._results = pd.concat([self._prev_results, pd.DataFrame(data.T, columns=self._prev_results.columns)], ignore_index=True)
+            self._results = pd.concat([self._results, pd.DataFrame(data.T, columns=self._results.columns)], ignore_index=True)
         
         else:
             # If no previous results, create new DataFrame

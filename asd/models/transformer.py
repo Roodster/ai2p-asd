@@ -103,11 +103,13 @@ class Embeddings(BaseModel):
 
         patch_size = _pair((patch_sizes[0], patch_sizes[1]))
         n_patches = patch_size[0] * patch_size[1]
-
+        print('n patches: ', n_patches)
+        
         self.patch_embeddings = Conv2d(in_channels=in_channels,
                                        out_channels=n_patches,
                                        kernel_size=patch_size,
                                        stride=patch_size).to(self.device)
+                
         self.position_embeddings = nn.Parameter(th.zeros(1, n_patches + 1, 256)).to(self.device)
         self.cls_token = nn.Parameter(th.zeros(1, 1, 256)).to(self.device)
 
@@ -121,17 +123,21 @@ class Embeddings(BaseModel):
         B = x.shape[0]
         cls_tokens = self.cls_token.expand(B, -1, -1)
         # print(f"Embeddings patch {x.shape}")
+        print('patch cls_tokens', cls_tokens.shape)
 
         x = self.patch_embeddings(x)
+
+
         x = x.flatten(2)
         x = x.transpose(-1, -2)
         x = th.cat((cls_tokens, x), dim=1)
-        # print(f"Embeddings after patch {x.shape}")
-        # print(f"Embeddings position embedding {self.position_embeddings.shape}")
 
+        print(f"Embeddings after patch {x.shape}")
+        print(f"Embeddings position embedding {self.position_embeddings.shape}")
+        
         embeddings = x + self.position_embeddings
         embeddings = self.dropout(embeddings)
-        # print(f"Embeddings return {x.shape}")
+        print(f"Embeddings return {x.shape}")
 
         return embeddings
 
