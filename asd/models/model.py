@@ -48,11 +48,11 @@ class DummyModel(BaseModel):
     
 class CNNBiLSTM(BaseModel):
         
-    def __init__(self, args):
+    def __init__(self, args, in_features=4):
         super(CNNBiLSTM, self).__init__(args=args)
         
         # Define CNN layers
-        self.conv1 = nn.Conv2d(4, 64, kernel_size=(3, 1), padding=(1, 0)).to(self.device)
+        self.conv1 = nn.Conv2d(in_features, 64, kernel_size=(3, 1), padding=(1, 0)).to(self.device)
         self.conv2 = nn.Conv2d(64, 32, kernel_size=(3, 1), padding=(1, 0)).to(self.device)
         self.conv3 = nn.Conv2d(32, 16, kernel_size=(3, 1), padding=(1, 0)).to(self.device)
         self.pool = nn.MaxPool2d((3, 1)).to(self.device)

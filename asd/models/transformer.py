@@ -103,7 +103,6 @@ class Embeddings(BaseModel):
 
         patch_size = _pair((patch_sizes[0], patch_sizes[1]))
         n_patches = (img_size[0] // patch_size[0]) * (img_size[1] // patch_size[1])
-        print('n patches: ', n_patches)
         
         self.patch_embeddings = Conv2d(in_channels=in_channels,
                                        out_channels=256,

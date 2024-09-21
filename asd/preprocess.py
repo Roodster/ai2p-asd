@@ -248,7 +248,7 @@ if __name__ == "__main__":
     from common.utils import load_edf_filepaths, clean_path, load_eeg_file, save_spectrograms_and_labels
     
     
-    dataset_path = "./data/dataset/train/raw/temp/"
+    dataset_path = "./data/dataset/train/raw/temp"
     dataset_save_root_path = "./data/dataset/test/full-signals/"
     
     files_list = load_edf_filepaths(dataset_path)
@@ -269,7 +269,7 @@ if __name__ == "__main__":
         
         pipeline = Pipeline([('filters', BandpassFilter(sfreq=256,lowcut=1, highcut=40, order=6)),
                              ('normalizes',ZScoreNormalization()),
-                             ('segments', SegmentSignals(fs=256, segment_length=1, overlap=0.5))
+                             ('segments', SegmentSignals(fs=256, segment_length=1, overlap=0))
                              ]) 
         
         
