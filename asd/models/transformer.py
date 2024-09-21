@@ -102,11 +102,10 @@ class Embeddings(BaseModel):
         img_size = _pair(img_size)
 
         patch_size = _pair((patch_sizes[0], patch_sizes[1]))
-        n_patches = (img_size[0] // patch_size[0]) * (img_size[1] // patch_size[1])
-        self.hybrid = False
+        n_patches = patch_size[0] * patch_size[1]
 
         self.patch_embeddings = Conv2d(in_channels=in_channels,
-                                       out_channels=256,
+                                       out_channels=n_patches,
                                        kernel_size=patch_size,
                                        stride=patch_size).to(self.device)
         self.position_embeddings = nn.Parameter(th.zeros(1, n_patches + 1, 256)).to(self.device)
