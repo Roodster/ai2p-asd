@@ -102,11 +102,11 @@ class Embeddings(BaseModel):
         img_size = _pair(img_size)
 
         patch_size = _pair((patch_sizes[0], patch_sizes[1]))
-        n_patches = patch_size[0] * patch_size[1]
+        n_patches = (img_size[0] // patch_size[0]) * (img_size[1] // patch_size[1])
         print('n patches: ', n_patches)
         
         self.patch_embeddings = Conv2d(in_channels=in_channels,
-                                       out_channels=n_patches,
+                                       out_channels=256,
                                        kernel_size=patch_size,
                                        stride=patch_size).to(self.device)
                 
@@ -119,17 +119,24 @@ class Embeddings(BaseModel):
         # print(f"Embeddings input {x.shape}")
         x = x.to(self.device)
         x = x.unsqueeze(1)
+        print('input x', x.shape)
 
         B = x.shape[0]
         cls_tokens = self.cls_token.expand(B, -1, -1)
         # print(f"Embeddings patch {x.shape}")
         print('patch cls_tokens', cls_tokens.shape)
+        print('input x to patch embeddings', x.shape)
 
         x = self.patch_embeddings(x)
 
+        print('output x of patch embeddings', x.shape)
 
         x = x.flatten(2)
+        print('output x of flatten', x.shape)
+
         x = x.transpose(-1, -2)
+        print('output x of tranpose -1, -2', x.shape)
+
         x = th.cat((cls_tokens, x), dim=1)
 
         print(f"Embeddings after patch {x.shape}")
