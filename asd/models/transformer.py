@@ -97,11 +97,11 @@ class MLP(BaseModel):
 class Embeddings(BaseModel):
     """Construct the embeddings from patch, position embeddings.
     """
-    def __init__(self, args, img_size=(4, 256), in_channels=1):
+    def __init__(self, args, img_size=(4, 256), patch_sizes=(16, 16), in_channels=1):
         super(Embeddings, self).__init__(args=args)
         img_size = _pair(img_size)
 
-        patch_size = _pair((4, 4))
+        patch_size = _pair((patch_sizes[0], patch_sizes[1]))
         n_patches = (img_size[0] // patch_size[0]) * (img_size[1] // patch_size[1])
         self.hybrid = False
 
@@ -109,7 +109,7 @@ class Embeddings(BaseModel):
                                        out_channels=256,
                                        kernel_size=patch_size,
                                        stride=patch_size).to(self.device)
-        self.position_embeddings = nn.Parameter(th.zeros(1, 65, 256)).to(self.device)
+        self.position_embeddings = nn.Parameter(th.zeros(1, n_patches + 1, 256)).to(self.device)
         self.cls_token = nn.Parameter(th.zeros(1, 1, 256)).to(self.device)
 
         self.dropout = Dropout(0.2)
@@ -190,7 +190,7 @@ class Encoder(BaseModel):
 
 
 class Transformer(BaseModel):
-    def __init__(self, args, img_size=256):
+    def __init__(self, args, img_size=(4)):
         super(Transformer, self).__init__(args=args)
         self.embeddings = Embeddings(args, img_size=img_size).to(self.device)
         self.encoder = Encoder(args).to(self.device)

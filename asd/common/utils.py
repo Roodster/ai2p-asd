@@ -62,10 +62,9 @@ def load_edf_filepaths(root_path):
     
     return edf_files
 
-def load_eeg_file(file):
+def load_eeg_file(file, channels="F7-T7;T7-P7;F8-T8;T8-P8"):
     # Load a single file
-    channels = "F7-T7;T7-P7;F8-T8;T8-P8".split(";")
-    
+    channels = channels.split(";")
     try:
         eeg_file = sdp.EEG(file, channels=channels)
     except:

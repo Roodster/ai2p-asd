@@ -248,17 +248,17 @@ if __name__ == "__main__":
     from common.utils import load_edf_filepaths, clean_path, load_eeg_file, save_spectrograms_and_labels
     
     
-    dataset_path = "./data/dataset/train/raw/"
-    dataset_save_root_path = "./data/dataset/test/signals/"
+    dataset_path = "./data/dataset/train/raw/temp/"
+    dataset_save_root_path = "./data/dataset/test/full-signals/"
     
     files_list = load_edf_filepaths(dataset_path)
-    
     
     pbar = tqdm(files_list)
     for file in pbar: 
         # pbar.set_description(f"current file {file}")
 
-        eeg_file = load_eeg_file(file)
+        channels="FZ-CZ;CZ-PZ;F8-T8;P4-O2;FP2-F8;F4-C4;C4-P4;P3-O1;FP2-F4;F3-C3;C3-P3;P7-O1;FP1-F3;F7-T7;T7-P7;FP1-F7"
+        eeg_file = load_eeg_file(file, channels=channels)
 
         if eeg_file == None:
             continue
@@ -269,8 +269,7 @@ if __name__ == "__main__":
         
         pipeline = Pipeline([('filters', BandpassFilter(sfreq=256,lowcut=1, highcut=40, order=6)),
                              ('normalizes',ZScoreNormalization()),
-                             ('segments', SegmentSignals(fs=256, segment_length=1, overlap=0)),
-                            #  ('samples', BalanceSeizureSegments(random_state=42))
+                             ('segments', SegmentSignals(fs=256, segment_length=1, overlap=0.5))
                              ]) 
         
         
