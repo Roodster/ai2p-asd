@@ -119,32 +119,32 @@ class Embeddings(BaseModel):
         # print(f"Embeddings input {x.shape}")
         x = x.to(self.device)
         x = x.unsqueeze(1)
-        print('input x', x.shape)
+        # print('input x', x.shape)
 
         B = x.shape[0]
         cls_tokens = self.cls_token.expand(B, -1, -1)
         # print(f"Embeddings patch {x.shape}")
-        print('patch cls_tokens', cls_tokens.shape)
-        print('input x to patch embeddings', x.shape)
+        # print('patch cls_tokens', cls_tokens.shape)
+        # print('input x to patch embeddings', x.shape)
 
         x = self.patch_embeddings(x)
 
-        print('output x of patch embeddings', x.shape)
+        # print('output x of patch embeddings', x.shape)
 
         x = x.flatten(2)
-        print('output x of flatten', x.shape)
+        # print('output x of flatten', x.shape)
 
         x = x.transpose(-1, -2)
-        print('output x of tranpose -1, -2', x.shape)
+        # print('output x of tranpose -1, -2', x.shape)
 
         x = th.cat((cls_tokens, x), dim=1)
 
-        print(f"Embeddings after patch {x.shape}")
-        print(f"Embeddings position embedding {self.position_embeddings.shape}")
+        # print(f"Embeddings after patch {x.shape}")
+        # print(f"Embeddings position embedding {self.position_embeddings.shape}")
         
         embeddings = x + self.position_embeddings
         embeddings = self.dropout(embeddings)
-        print(f"Embeddings return {x.shape}")
+        # print(f"Embeddings return {x.shape}")
 
         return embeddings
 
