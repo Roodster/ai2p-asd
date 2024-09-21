@@ -77,7 +77,6 @@ class CNNBiLSTM(BaseModel):
 
     def forward(self, x):
         x = x.to(self.device)
-        print('input: ', x.shape)
         # Pass input through CNN layers
         x = th.relu(self.conv1(x))
         x = th.relu(self.conv2(x))
