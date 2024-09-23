@@ -208,6 +208,54 @@ class MNISTDataset(Dataset):
 
         return image, label
     
+    
+class DummyDataset(Dataset):
+    def __init__(self, num_classes, n_samples_per_class, x, y=None, z=None, seed=42):
+        self.num_classes = num_classes
+        self.n_samples_per_class = n_samples_per_class
+        self.x = x
+        self.y = y
+        self.z = z
+        self.seed = seed
+        
+        np.random.seed(self.seed)
+        torch.manual_seed(self.seed)
+        
+        self.dimensions = self._get_dimensions()
+        self.data, self.labels = self._generate_data()
+
+    def _get_dimensions(self):
+        dims = [self.x]
+        if self.y is not None:
+            dims.append(self.y)
+        if self.z is not None:
+            dims.append(self.z)
+        return tuple(dims)
+
+    def _generate_data(self):
+        data = []
+        labels = []
+
+        for class_idx in range(self.num_classes):
+            class_samples = torch.randn(self.n_samples_per_class, *self.dimensions)
+            
+            # Make classes separable
+            offset = class_idx * torch.ones(self.dimensions)
+            class_samples += offset
+            
+            data.append(class_samples)
+            labels.extend([class_idx] * self.n_samples_per_class)
+
+        data = torch.cat(data, dim=0)
+        labels = torch.tensor(labels)
+
+        return data, labels
+
+    def __len__(self):
+        return len(self.labels)
+
+    def __getitem__(self, idx):
+        return self.data[idx], self.labels[idx]
 
 # ============================== UTILITIES ==============================
 
