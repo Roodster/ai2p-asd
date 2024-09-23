@@ -117,7 +117,6 @@ class Embeddings(BaseModel):
     def forward(self, x):
         # print(f"Embeddings input {x.shape}")
         x = x.to(self.device)
-        x = x.unsqueeze(1)
         # print('input x', x.shape)
 
         B = x.shape[0]
@@ -206,12 +205,12 @@ class Transformer(BaseModel):
         self.embeddings = Embeddings(args, img_size=img_size, patch_sizes=patch_sizes, in_channels=in_channels).to(self.device)
         self.encoder = Encoder(args).to(self.device)
 
-    def forward(self, input_ids):
-        input_ids = input_ids.to(self.device)
+    def forward(self, x):
+        x = x.to(self.device)
 
         # print(f"Transformer {input_ids.shape}")
 
-        embedding_output = self.embeddings(input_ids)
+        embedding_output = self.embeddings(x)
         # print(f"Encoder encoded {embedding_output.shape}")
 
         encoded = self.encoder(embedding_output)
