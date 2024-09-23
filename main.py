@@ -29,7 +29,7 @@ def main():
     test_dataset = OfflineSegmentsDataset("./data/dataset/test/partial-4-signals/chb01", mode='test', patient_id=args.patient_id)
     
     # train_dataset = DummyDataset(num_classes=2, n_samples_per_class=4096, x=1, y=4, z=256)
-    # test_dataset = DummyDataset(num_classes=2, n_samples_per_class=512, x=1, y=4, z=256)    
+    test_dataset = DummyDataset(num_classes=2, n_samples_per_class=512, x=1, y=4, z=256)    
     
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=4)
     test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, num_workers=4)
@@ -48,6 +48,7 @@ def main():
     # transformer = OHELabelTransformer()
     
     
+    results = Results(verbose=False)
     learner = AELearner(args=args, 
                       model=model, 
                       optimizer=optimizer,
@@ -56,6 +57,7 @@ def main():
     
     experiment = Experiment(args=args, 
                             learner=learner,
+                            results=results,
                             verbose=False)
     
     

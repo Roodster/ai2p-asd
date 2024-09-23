@@ -11,14 +11,14 @@ from asd.results import Results
 class Experiment:
     
     
-    def __init__(self, args, learner, label_transformer=None, verbose=False):
+    def __init__(self, args, learner, results, label_transformer=None, verbose=False):
         assert learner is not None, "NO learner"
 
         # ===== DEPENDENCIES =====
         self.args = args
         self.learner = learner
+        self.results = results
         self.writer = Writer(args=args)
-        self.results = Results()
         self.plots = Plots()
         self.label_transformer = label_transformer
         
