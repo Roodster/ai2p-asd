@@ -9,6 +9,7 @@ from asd.models.model import Model
 from asd.models.transformer import VisionTransformer
 from asd.models.autoencoder import ShallowAE
 from asd.learner import Learner
+from asd.labels import OHELabelTransformer
 from asd.plots import Plots
 from asd.experiment import Experiment
 import torch as th
@@ -31,9 +32,8 @@ def main():
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=4)
     test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, num_workers=4)
     
-    writer = Writer(args=args)
     
-    
+
     model = ShallowAE(args=args, input_dim=256, hidden_dim=2)
     # if u want to load an existing model. use this. Dont forget to add the corresponding results file to the results
     # model.load_state_dict(th.load(".\logs\\run_dev_dummy\seed_1_eval_01\models\model_dummy_2.pickle", weights_only=True))
@@ -43,8 +43,13 @@ def main():
     
     criterion = nn.CrossEntropyLoss()
     
+    
+    writer = Writer(args=args)    
     results = Results()
     plots = Plots()
+    
+    # This transformer can be added to Experiment(..., label_transformer=transformer) to encode the labels to OHE
+    # transformer = OHELabelTransformer()
     
     
     learner = Learner(args=args, 
