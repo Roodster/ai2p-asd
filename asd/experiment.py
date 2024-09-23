@@ -41,18 +41,15 @@ class Experiment:
         set_seed(args.seed)
     
     def run(self, train_loader, test_loader, mode='binary'):
-        
-        assert train_loader is not None, "Please, provide a training dataset : )."
-        self.learner.model.train()
-        
+        assert train_loader is not None, "Please, provide a training dataset :)."        
+        assert test_loader is not None, "Please, provide a test dataset :)."        
+
         self.writer.save_hyperparameters(self.args)
 
         pbar = tqdm(range(self.start_epochs, self.start_epochs + self.n_epochs))
         
         for epoch in pbar:
             
-            loss = .0        
-
             self.results = self.learner.step(train_loader, results=self.results, verbose=self.verbose)
             
             if (epoch + 1) % self.eval_interval == 0: 
