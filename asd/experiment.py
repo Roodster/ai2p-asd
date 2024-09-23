@@ -9,7 +9,7 @@ from asd.common.utils import set_seed
 class Experiment:
     
     
-    def __init__(self, args, learner, writer, results, plots, label_transformer=None):
+    def __init__(self, args, learner, writer, results, plots, label_transformer=None, verbose=False):
         assert learner is not None, "NO learner"
         assert writer is not None, "Running an experiment without loggin is a futile endeavor."
         assert results is not None, "Running an experiment without logging is a futile endeavor."
@@ -36,6 +36,7 @@ class Experiment:
         assert args.eval_save_model_interval > 0, "Can't modulo by zero."
         self.save_model_interval = args.eval_save_model_interval
         
+        self.verbose = verbose
         
         # ===== SEEDING =====
         set_seed(args.seed)
@@ -83,6 +84,8 @@ class Experiment:
         train_loss = .0
         for batch_data, _ in train_loader:
             batch_data = batch_data.to(self.args.device)
+            if self.verbose:
+                print(f"Shape of batch_data: {batch_data.shape}")
             outputs = self.learner.predict(batch_data)        
             loss = self.learner.compute_loss(y_pred=outputs.float(), y_test=batch_data)    
             self.learner.update(loss)
@@ -93,11 +96,22 @@ class Experiment:
     def classifier_step(self, train_loader):
         train_loss = .0
         for batch_data, batch_labels in train_loader:
-            outputs = self.learner.predict(batch_data)
+            batch_data, batch_labels = batch_data.to(self.args.device), batch_labels.to(self.args.device)
             
+            if self.verbose:
+                print(f"Shape of batch_data: {batch_data.shape}")
+                print(f"Shape of batch_labels: {batch_labels.shape} ")
+            
+            outputs = self.learner.predict(batch_data)
+        
+            if self.verbose:
+                print(f"Shape of outputs: {outputs.shape}")
+                
             if self.label_transformer != None:
                 labels = self.label_transformer(batch_labels)
-                
+                if self.verbose:
+                    print(f"Shape of labels: {labels.shape}")        
+        
             loss = self.learner.compute_loss(y_pred=outputs.float(), y_test=labels)    
             self.learner.update(loss)
             train_loss += loss.item()
@@ -112,7 +126,14 @@ class Experiment:
         with th.no_grad():
             for batch_data, _ in dataloader:
                 batch_data = batch_data.to(self.device)
+                
+                if self.verbose:
+                    print(f"Shape of batch_data: {batch_data.shape}")
+                    
                 outputs = self.learner.predict(batch_data)
+
+                if self.verbose:
+                    print(f"Shape of outputs: {outputs.shape}")
 
                 loss = self.learner.criterion(outputs, batch_data)
                 test_loss += loss.item()
@@ -135,10 +156,20 @@ class Experiment:
         with th.no_grad():
             for batch_data, batch_labels in dataloader:
                 batch_data, labels = batch_data.to(self.device), batch_labels.to(self.device)
+                
+                if self.verbose:
+                    print(f"Shape of batch_data: {batch_data.shape}")
+                    print(f"Shape of batch_labels: {batch_labels.shape} ")
+                
                 outputs = self.learner.predict(batch_data)
-
+                
+                if self.verbose:
+                    print(f"Shape of outputs: {outputs.shape}")
+                
                 if self.label_transformer != None:
                     labels = self.label_transformer(batch_labels)
+                    if self.verbose:
+                        print(f"Shape of labels: {labels.shape}")  
                 
                 loss = self.learner.criterion(outputs, labels.float())
                 running_loss += loss.item()
