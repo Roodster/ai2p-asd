@@ -15,7 +15,7 @@ test_ratio: 0.3
 
 ### ===== TRAIN PARAMETERS =====
 device: cpu
-batch_size: 4
+batch_size: 256
 learning_rate: 0.001
 n_epochs: 1
 

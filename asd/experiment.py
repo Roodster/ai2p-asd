@@ -1,6 +1,8 @@
 import numpy as np
 import torch as th
-from sklearn.metrics import multilabel_confusion_matrix, confusion_matrix
+import torch.functional as F
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, accuracy_score, precision_recall_fscore_support, roc_auc_score
 from tqdm import tqdm
 
 from asd.common.utils import set_seed
@@ -61,7 +63,7 @@ class Experiment:
                 train_loss += loss
             
             if (epoch + 1) % self.eval_interval == 0: 
-                self.evaluate_samples(test_loader)
+                self.evaluate_metrics(test_loader)
                 self.results.train_losses = train_loss.detach().cpu().numpy()
                 self.results.epochs = epoch+1
             
@@ -72,8 +74,43 @@ class Experiment:
     
         self.plots.plot(self.results, update=False)
         self.writer.save_statistics(self.results.get())
-                
+        
+        
+    def evaluate_metrics(self, dataloader):
+        self.learner.model.eval()
+        running_loss = 0.0
+        all_labels = []
+        all_predictions = []
 
+        with th.no_grad():
+            for images, labels in tqdm(dataloader, desc="Validating"):
+                images, labels = images.to(self.device), labels.to(self.device)
+                images = images.unsqueeze(3)
+                ohe_labels = F.one_hot(labels.to(th.int64), num_classes=2)  # Assuming MNIST with 10 classes
+                outputs = self.learner.predict(images)
+
+                loss = self.learner.criterion(outputs, ohe_labels.float())
+                running_loss += loss.item()
+
+                _, predicted = outputs.max(1)
+                
+                all_labels.extend(labels.cpu().numpy())
+                all_predictions.extend(predicted.cpu().numpy())
+
+
+        # Calculate overall metrics
+        accuracy = accuracy_score(all_labels, all_predictions)
+        auc = roc_auc_score(all_labels, all_predictions, average='macro')
+        overall_precision, overall_recall, overall_f1, _ = precision_recall_fscore_support(all_labels, all_predictions, average='macro')
+
+        # Sum up the values for all classes
+        self.results.aucs = auc
+        self.results.precisions = overall_precision
+        self.results.sensitivities = overall_recall
+        self.results.f1s = overall_f1
+        self.results.accuracies = accuracy
+        self.results.test_losses = running_loss / len(dataloader)
+        
     def evaluate_samples(self, test_loader):
         """
         Args:
