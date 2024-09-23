@@ -1,5 +1,5 @@
 import torch as th
-import torch.functional as F
+import torch.nn.functional as F
 
 class OHELabelTransformer(th.nn.Module):
     """Class to transform class labels using one-hot encoding."""
