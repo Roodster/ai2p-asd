@@ -44,7 +44,7 @@ nbformat==5.10.4
 nest-asyncio==1.6.0
 networkx==3.3
 numba==0.60.0
-numpy==1.24.0
+numpy==2.0.0
 opt-einsum==3.3.0
 packaging==24.1
 pandas==2.2.2
@@ -71,6 +71,7 @@ requests==2.32.3
 rpds-py==0.20.0
 scikit-learn==1.5.1
 scipy==1.14.1
+seaborn==0.13.2
 seizure_data_processing @ git+https://github.com/sderooij/seizure_data_processing.git@0fcb5cc2c860415dde24d0f687b592cc4021d21f
 six==1.16.0
 stack-data==0.6.3
