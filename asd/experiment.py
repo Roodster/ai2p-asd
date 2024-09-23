@@ -75,6 +75,7 @@ class Experiment:
     
             self.plots.plot(self.results)
     
+        print('results: \n', self.results.get())
         self.plots.plot(self.results, update=False)
         self.writer.save_statistics(self.results.get())
 
