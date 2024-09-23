@@ -1,17 +1,9 @@
-from base import BaseModel
 import torch.nn as nn
 import torch as th
 import torch.optim as optim
 from torch.utils.data import DataLoader
 
-from asd.args import Args
-from asd.dataset import OnlineSegmentsDataset, OfflineSegmentsDataset
-from asd.experiment import Experiment
-from asd.writer import Writer
-from asd.plots import Plots
-from asd.results import Results
-from asd.learner import Learner
-
+from asd.models.base import BaseModel
 
 class ShallowDecoder(BaseModel):
     
