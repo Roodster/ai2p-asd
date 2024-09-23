@@ -7,11 +7,12 @@ from asd.models.base import BaseModel
 
 #encoder
 class ShallowEncoder(BaseModel):
-    def __init__(self, args, in_features, latent_dims):
+    def __init__(self, args, in_features, latent_dims, channels=4):
         super(ShallowEncoder, self).__init__(args=args)
         self.latent_dims = latent_dims
         self.in_features = in_features
-        self.linear1 = nn.Linear(in_features=in_features, out_features=latent_dims)
+        self.channels = channels
+        self.linear1 = nn.Linear(in_features=in_features*channels, out_features=latent_dims)
         self.relu = nn.ReLU()
 
 
@@ -35,17 +36,17 @@ class ShallowDecoder(BaseModel):
     def forward(self, z):
 
         z = self.relu(self.linear1(z))
-        z = z.reshape((-1, self.channels, self.out_features))
+        z = z.reshape((-1, 1, self.channels, self.out_features))
 
         return z
 
 #autoencoder
 class ShallowAE(BaseModel):
-    def __init__(self, args, latent_dims, in_features, out_features, channels=4):
+    def __init__(self, args, in_features, latent_dims, channels=4):
         super(ShallowAE, self).__init__(args=args)
 
-        self.encoder = ShallowEncoder(in_features=in_features, latent_dims=latent_dims)
-        self.decoder = ShallowDecoder(latent_dims=latent_dims, out_features=out_features, channels=channels)
+        self.encoder = ShallowEncoder(args=args, in_features=in_features, latent_dims=latent_dims, channels=channels)
+        self.decoder = ShallowDecoder(args=args, latent_dims=latent_dims, out_features=in_features, channels=channels)
 
     def forward(self, x):
         z = self.encoder(x)

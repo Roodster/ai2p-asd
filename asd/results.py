@@ -49,7 +49,13 @@ class Results:
         
         else:
             # If no previous results, create new DataFrame
-            results = {
+            results = self._get()
+            self._results = pd.DataFrame(results)
+        
+        return self._results
+    
+    def _get(self):
+        return {
                 'epoch': self._epochs,
                 'train_loss': self._train_losses,
                 'test_loss': self._test_losses,
@@ -60,19 +66,17 @@ class Results:
                 'f1': self._f1s
             }
             
-            self._results = pd.DataFrame(results)
-        
-        return self._results
-    
     # Property and setter for train_losses
     @property
     def train_losses(self):
         if self.verbose:
             print('train loss: \n', self._train_losses)
-        losses = [self._train_losses[epoch-1] for epoch in self._epochs]
-        losses = np.array(losses).reshape(-1, 1)
-        normalized_losses = 1 + (losses - np.min(losses)) / (np.max(losses) - np.min(losses))
-        return normalized_losses.ravel()    
+            
+        losses = [self._train_losses[epoch]  for epoch in self._epochs]
+        first_elem = losses[0]
+        normalized_losses = [(loss/first_elem) for loss in losses]
+    
+        return normalized_losses 
     
     @train_losses.setter
     def train_losses(self, value):
@@ -83,9 +87,16 @@ class Results:
     def test_losses(self):
         if self.verbose:
             print('test_losses: \n', self._test_losses)
-        losses = np.array(self._test_losses).reshape(-1, 1)
-        normalized_losses = 1 + (losses - np.min(losses)) / (np.max(losses) - np.min(losses))
-        return normalized_losses.ravel()
+        
+        if len(self._test_losses) == 0:
+            return []
+        
+        losses = self._test_losses
+        first_elem = losses[0]
+        
+        normalized_losses = [(loss/first_elem) for loss in losses]
+        
+        return normalized_losses
     
     @test_losses.setter
     def test_losses(self, value):
