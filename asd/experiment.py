@@ -108,11 +108,11 @@ class Experiment:
                 print(f"Shape of outputs: {outputs.shape}")
                 
             if self.label_transformer != None:
-                labels = self.label_transformer(batch_labels)
+                batch_labels = self.label_transformer(batch_labels)
                 if self.verbose:
-                    print(f"Shape of labels: {labels.shape}")        
+                    print(f"Shape of labels: {batch_labels.shape}")        
         
-            loss = self.learner.compute_loss(y_pred=outputs.float(), y_test=labels)    
+            loss = self.learner.compute_loss(y_pred=outputs.float(), y_test=batch_labels)    
             self.learner.update(loss)
             train_loss += loss.item()
             
@@ -155,7 +155,7 @@ class Experiment:
 
         with th.no_grad():
             for batch_data, batch_labels in dataloader:
-                batch_data, labels = batch_data.to(self.device), batch_labels.to(self.device)
+                batch_data, batch_labels = batch_data.to(self.device), batch_labels.to(self.device)
                 
                 if self.verbose:
                     print(f"Shape of batch_data: {batch_data.shape}")
@@ -167,16 +167,16 @@ class Experiment:
                     print(f"Shape of outputs: {outputs.shape}")
                 
                 if self.label_transformer != None:
-                    labels = self.label_transformer(batch_labels)
+                    batch_labels = self.label_transformer(batch_labels)
                     if self.verbose:
-                        print(f"Shape of labels: {labels.shape}")  
+                        print(f"Shape of labels: {batch_labels.shape}")  
                 
-                loss = self.learner.criterion(outputs, labels.float())
+                loss = self.learner.criterion(outputs, batch_labels.float())
                 running_loss += loss.item()
 
                 _, predicted = outputs.max(1)
                 
-                all_labels.extend(labels.cpu().numpy())
+                all_labels.extend(batch_labels.cpu().numpy())
                 all_predictions.extend(predicted.cpu().numpy())
 
 
