@@ -24,17 +24,17 @@ def main():
     args = Args(file="./data/configs/default.yaml")
     
     # Load dataset
-    train_dataset = OnlineSegmentsDataset("./data/dataset/train/signals/", mode='train', patient_id=args.patient_id)
-    test_dataset = OnlineSegmentsDataset("./data/dataset/test/signals/chb01", mode='test', patient_id=args.patient_id)
+    train_dataset = OfflineSegmentsDataset("./data/dataset/train/partial-4-signals/", mode='train', patient_id=args.patient_id)
+    test_dataset = OfflineSegmentsDataset("./data/dataset/test/partial-4-signals/chb01", mode='test', patient_id=args.patient_id)
     
     # Instantiate dataloaders 
-    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=16)
+    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=4)
     test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, num_workers=4)
     
     writer = Writer(args=args)
     
     
-    model = ShallowAE(args=args, input_dim=256, hidden_dim=64)
+    model = ShallowAE(args=args, input_dim=256, hidden_dim=2)
     # if u want to load an existing model. use this. Dont forget to add the corresponding results file to the results
     # model.load_state_dict(th.load(".\logs\\run_dev_dummy\seed_1_eval_01\models\model_dummy_2.pickle", weights_only=True))
     
@@ -60,7 +60,7 @@ def main():
                             plots=plots)
     
     
-    experiment.run(train_loader=train_loader, test_loader=test_loader)
+    experiment.run(train_loader=train_loader, test_loader=test_loader, mode='ae')
 
 
 if __name__ == "__main__":
