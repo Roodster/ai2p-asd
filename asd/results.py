@@ -2,6 +2,8 @@ from sklearn.preprocessing import normalize
 import pandas as pd
 import numpy as np
 
+from pprint import pprint
+
 class Results:
     def __init__(self, file=None, verbose=False):
         self._prev_results = None
@@ -65,7 +67,9 @@ class Results:
                 'auc': self._aucs,
                 'f1': self._f1s
             }
-            
+    
+    def print(self):
+        pprint(self._get())
     # Property and setter for train_losses
     @property
     def train_losses(self):

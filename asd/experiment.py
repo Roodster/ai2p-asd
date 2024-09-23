@@ -60,7 +60,10 @@ class Experiment:
             
             if (epoch + 1) % self.save_model_interval == 0:
                 self.writer.save_model(self.learner.model, epoch+1)        
-            
+        
+            if self.verbose:
+                self.results.print()
+                
             self.plots.plot(results=self.results, update=True)
     
         self.plots.plot(results=self.results, update=False)
