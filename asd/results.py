@@ -3,9 +3,10 @@ import pandas as pd
 import numpy as np
 
 class Results:
-    def __init__(self, file=None):
+    def __init__(self, file=None, verbose=False):
         self._prev_results = None
         self._results = None
+        self.verbose = verbose
         # Initialize lists
         self._epochs = []
         self._train_losses = []
@@ -66,6 +67,8 @@ class Results:
     # Property and setter for train_losses
     @property
     def train_losses(self):
+        if self.verbose:
+            print('train loss: \n', self._train_losses)
         losses = [self._train_losses[epoch-1] for epoch in self._epochs]
         losses = np.array(losses).reshape(-1, 1)
         normalized_losses = 1 + (losses - np.min(losses)) / (np.max(losses) - np.min(losses))
@@ -78,6 +81,8 @@ class Results:
     # Property and setter for test_losses
     @property
     def test_losses(self):
+        if self.verbose:
+            print('test_losses: \n', self._test_losses)
         losses = np.array(self._test_losses).reshape(-1, 1)
         normalized_losses = 1 + (losses - np.min(losses)) / (np.max(losses) - np.min(losses))
         return normalized_losses.ravel()
@@ -89,6 +94,8 @@ class Results:
     # Property and setter for epochs
     @property
     def epochs(self):
+        if self.verbose:
+            print('epochs: ', self._epochs)
         return self._epochs
     
     @epochs.setter
@@ -98,6 +105,8 @@ class Results:
     # Property and setter for accuracies
     @property
     def accuracies(self):
+        if self.verbose:
+            print('accuracies: \n', self._accuracies)
         return self._accuracies
     
     @accuracies.setter
@@ -139,3 +148,4 @@ class Results:
     @f1s.setter
     def f1s(self, value):
         self._f1s.append(value)
+        

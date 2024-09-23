@@ -52,7 +52,8 @@ class Experiment:
         
         for epoch in pbar:
             
-            train_loss = .0          
+            train_loss = .0        
+            test_loss = .0  
             
             if mode in ('binary', 'bin', 'b'):
                 train_loss =  self.classifier_step(train_loader=train_loader)
