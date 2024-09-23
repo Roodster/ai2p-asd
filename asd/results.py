@@ -65,9 +65,11 @@ class Results:
     # Property and setter for train_losses
     @property
     def train_losses(self):
-        losses = np.array(self._train_losses).reshape(-1, 1)
+        losses = [self._train_losses[epoch] for epoch in self._epochs]
+        losses = np.array(losses).reshape(-1, 1)
         normalized_losses = 1 + (losses - np.min(losses)) / (np.max(losses) - np.min(losses))
         return normalized_losses.ravel()    
+    
     @train_losses.setter
     def train_losses(self, value):
         self._train_losses.append(value)

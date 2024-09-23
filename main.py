@@ -33,7 +33,6 @@ def main():
     test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, num_workers=4)
     
     
-
     model = ShallowAE(args=args, input_dim=256, hidden_dim=2)
     # if u want to load an existing model. use this. Dont forget to add the corresponding results file to the results
     # model.load_state_dict(th.load(".\logs\\run_dev_dummy\seed_1_eval_01\models\model_dummy_2.pickle", weights_only=True))

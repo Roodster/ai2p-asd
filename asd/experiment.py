@@ -72,10 +72,9 @@ class Experiment:
             
             if (epoch + 1) % self.save_model_interval == 0:
                 self.writer.save_model(self.learner.model, epoch+1)        
-    
+            print('results: \n', self.results.get())
             self.plots.plot(self.results)
     
-        print('results: \n', self.results.get())
         self.plots.plot(self.results, update=False)
         self.writer.save_statistics(self.results.get())
 
