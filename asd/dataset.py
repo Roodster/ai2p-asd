@@ -1,4 +1,6 @@
 import os
+import struct
+
 import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader
@@ -6,6 +8,8 @@ import seizure_data_processing as sdp
 import random
 import time
 from tqdm import tqdm
+from torchvision import transforms
+
 
 class RawDataset(Dataset):
     def __init__(self, path, channels):
@@ -179,8 +183,61 @@ class OfflineSegmentsDataset(Dataset):
                 
         return segment, label
     
+    
+class MNISTDataset(Dataset):
+    def __init__(self, images_file, labels_file, transform=None):
+        with open(labels_file, 'rb') as lbpath:
+            magic, n = struct.unpack('>II', lbpath.read(8))
+            self.labels = np.fromfile(lbpath, dtype=np.uint8)
+
+        with open(images_file, 'rb') as imgpath:
+            magic, num, rows, cols = struct.unpack('>IIII', imgpath.read(16))
+            self.images = np.fromfile(imgpath, dtype=np.uint8).reshape(len(self.labels), 784)
+
+        self.transform = transform
+
+    def __len__(self):
+        return len(self.labels)
+
+    def __getitem__(self, idx):
+        image = self.images[idx].reshape(28, 28).astype(np.float32) / 255
+        label = int(self.labels[idx])
+
+        if self.transform:
+            image = self.transform(image)
+
+        return image, label
+    
 
 # ============================== UTILITIES ==============================
+
+
+def load_mnist_data(train_images_file, train_labels_file, test_images_file, test_labels_file, batch_size=32, num_workers=4):
+    # Define the transform
+    transform = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize((0.1307,), (0.3081,))  # MNIST mean and std
+    ])
+
+    # Load the training data
+    train_dataset = MNISTDataset(
+        images_file=train_images_file,
+        labels_file=train_labels_file,
+        transform=transform
+    )
+
+    # Load the test data
+    test_dataset = MNISTDataset(
+        images_file=test_images_file,
+        labels_file=test_labels_file,
+        transform=transform
+    )
+
+    # Create DataLoaders
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
+
+    return train_loader, test_loader
 
 def split_dataset(dataset, train_ratio=0.7, test_ratio=0.15, batch_size=32, shuffle=True, num_workers=1):
 
