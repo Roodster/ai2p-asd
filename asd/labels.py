@@ -25,6 +25,6 @@ class OHELabelTransformer(th.nn.Module):
             A tensor containing the one-hot encoded labels.
         """
         # Convert labels to one-hot encoding
-        one_hot = F.one_hot(y.to(th.int64), num_classes=2)
+        one_hot = F.one_hot(y.to(th.int64), num_classes=self.num_classes)
 
         return one_hot
