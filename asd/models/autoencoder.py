@@ -19,8 +19,6 @@ class ShallowDecoder(BaseModel):
 
 class ShallowEncoder(BaseModel):
     
-    
-    
     def __init__(self, args, input_dim=256, hidden_dim=64):
         super(ShallowEncoder, self).__init__(args)
         
@@ -43,8 +41,12 @@ class ShallowAE(BaseModel):
         
     
     def forward(self, x):
+        print(f'x1.shape {x.shape}')
         x = self.encoder(x)
+        print(f'x2.shape {x.shape}')
+
         x = self.decoder(x)
+        print(f'x3.shape {x.shape}')
         
         return x
     
