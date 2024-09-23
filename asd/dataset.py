@@ -210,13 +210,15 @@ class MNISTDataset(Dataset):
     
     
 class DummyDataset(Dataset):
-    def __init__(self, num_classes, n_samples_per_class, x, y=None, z=None, seed=42):
+    def __init__(self, num_classes, n_samples_per_class, x, y=None, z=None, seed=42, is_non_linear=True, noise_std=0.1):
         self.num_classes = num_classes
         self.n_samples_per_class = n_samples_per_class
         self.x = x
         self.y = y
         self.z = z
         self.seed = seed
+        self.noise_std = noise_std
+        self.is_non_linear = is_non_linear
         
         np.random.seed(self.seed)
         torch.manual_seed(self.seed)
@@ -237,12 +239,16 @@ class DummyDataset(Dataset):
         labels = []
 
         for class_idx in range(self.num_classes):
+            # Generate initial random data
             class_samples = torch.randn(self.n_samples_per_class, *self.dimensions)
             
-            # Make classes separable
-            offset = class_idx * torch.ones(self.dimensions)
-            class_samples += offset
-            
+            # Apply non-linear transformation
+            if self.is_non_linear: 
+                class_samples = self._apply_nonlinear_transform(class_samples, class_idx)
+            else: 
+                offset = class_idx * torch.ones(self.dimensions)
+                class_samples += offset
+                
             data.append(class_samples)
             labels.extend([class_idx] * self.n_samples_per_class)
 
@@ -251,12 +257,28 @@ class DummyDataset(Dataset):
 
         return data, labels
 
+    def _apply_nonlinear_transform(self, samples, class_idx):
+        # Apply sine wave transformation
+        freq = 1 + class_idx * 0.5  # Different frequency for each class
+        amplitude = 2 + class_idx * 0.5  # Different amplitude for each class
+        
+        # Apply transformation to first dimension
+        samples[:, 0] = amplitude * torch.sin(freq * samples[:, 0])
+        
+        # If more than one dimension, apply cosine to second dimension
+        if samples.shape[1] > 1:
+            samples[:, 1] = amplitude * torch.cos(freq * samples[:, 1])
+        
+        # Add some noise to make it more challenging
+        samples += torch.randn_like(samples) * self.noise_std
+        
+        return samples
+
     def __len__(self):
         return len(self.labels)
 
     def __getitem__(self, idx):
         return self.data[idx], self.labels[idx]
-
 # ============================== UTILITIES ==============================
 
 
