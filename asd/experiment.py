@@ -171,7 +171,7 @@ class Experiment:
                     if self.verbose:
                         print(f"Shape of labels: {batch_labels.shape}")  
                 
-                loss = self.learner.criterion(outputs, batch_labels.float())
+                loss = self.learner.criterion(outputs, batch_labels)
                 running_loss += loss.item()
 
                 _, predicted = outputs.max(1)
