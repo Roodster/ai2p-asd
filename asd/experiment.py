@@ -67,12 +67,11 @@ class Experiment:
                 elif mode in ('autoencoder', 'ae'):
                     test_loss = self.evaluate_autoencoder(dataloader=test_loader)  
                 
-                self.results.train_losses = test_loss
+                self.results.test_losses = test_loss
                 self.results.epochs = epoch+1
             
             if (epoch + 1) % self.save_model_interval == 0:
                 self.writer.save_model(self.learner.model, epoch+1)        
-            print('results: \n', self.results.get())
             self.plots.plot(self.results)
     
         self.plots.plot(self.results, update=False)

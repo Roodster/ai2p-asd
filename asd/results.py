@@ -58,6 +58,7 @@ class Results:
                 'auc': self._aucs,
                 'f1': self._f1s
             }
+            
             self._results = pd.DataFrame(results)
         
         return self._results
