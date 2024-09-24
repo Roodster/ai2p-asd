@@ -83,7 +83,7 @@ class Learner(BaseLearner):
                 if verbose:
                     print(f"Shape of labels: {batch_labels.shape}")        
         
-            loss = self.compute_loss(y_pred=outputs.float(), y_test=batch_labels)    
+            loss = self.compute_loss(y_pred=outputs, y_test=batch_labels)    
             self.update(loss=loss)
             train_loss += loss.item()
         results.train_losses = train_loss / len(data_loader)
