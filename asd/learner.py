@@ -117,6 +117,8 @@ class Learner(BaseLearner):
                 loss = self.criterion(outputs, batch_labels)
                 test_loss += loss.item()
 
+                if len(outputs.shape) == 1:
+                    outputs = (outputs > 0.5).int()
                 if len(outputs.shape) == 2:
                     _, outputs = outputs.max(1)
                 
