@@ -117,10 +117,11 @@ class Learner(BaseLearner):
                 loss = self.criterion(outputs, batch_labels)
                 test_loss += loss.item()
 
-                _, predicted = outputs.max(1)
+                if len(outputs.shape) == 2:
+                    _, outputs = outputs.max(1)
                 
                 all_labels.extend(batch_labels.cpu().numpy())
-                all_predictions.extend(predicted.cpu().numpy())
+                all_predictions.extend(outputs.cpu().numpy())
 
 
         # Calculate overall metrics
