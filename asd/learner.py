@@ -117,7 +117,7 @@ class Learner(BaseLearner):
                         print(f"Shape of labels: {true_labels.shape}")  
                 
         
-                loss = self.criterion(outputs, true_labels)
+                loss = self.compute_loss(y_pred=outputs, y_test=true_labels)
                 test_loss += loss.item()
 
                 if len(outputs.shape) == 1:
@@ -212,7 +212,7 @@ class AELearner(Learner):
                 if verbose:
                     print(f"Shape of outputs: {outputs.shape}")
 
-                loss = self.criterion(outputs, batch_data)
+                loss = self.compute_loss(y_pred=outputs, y_test=batch_data)
                 test_loss += loss.item()
             
         results.aucs = 0
@@ -226,3 +226,78 @@ class AELearner(Learner):
         
         
         
+class SSLLearner(AELearner):
+
+    def __init__(self, 
+                 args=None, 
+                 model=None, 
+                 optimizer=None,
+                 criterion=None
+                 ): 
+        assert args is not None, "No args defined."
+        assert model is not None, "No model defined."
+        assert optimizer is not None, "No optimizer defined."
+        assert criterion is not None, "No criterion defined."
+        
+        super().__init__(args=args, 
+                         model=model, 
+                         optimizer=optimizer, 
+                         criterion=criterion)
+        
+        
+    def compute_loss(self, outputs):
+        # probably some more preprcocessing here such as splitting.
+        return self.criterion(outputs)        
+        
+        
+    def step(self, data_loader, results, verbose=False):
+        train_loss = .0
+        self.model.train()
+        for batch_data, _ in data_loader:
+
+            batch_data = batch_data.to(self.args.device)
+            
+            if verbose:
+                print(f"Shape of batch_data: {batch_data.shape}")
+            
+            outputs = self.predict(batch_data)
+        
+            if verbose:
+                print(f"Shape of outputs: {outputs.shape}")
+                    
+            loss = self.compute_loss(outputs=outputs)    
+            self.update(loss)
+            train_loss += loss.item()
+        
+        results.train_losses = train_loss / len(data_loader)
+
+        return results
+
+
+    def evaluate(self, dataloader, results, verbose=False):
+        self.model.eval()
+        test_loss = .0
+            
+        with th.no_grad():
+            for batch_data, _ in dataloader:
+                batch_data = batch_data.to(self.device)
+                
+                if verbose:
+                    print(f"Shape of batch_data: {batch_data.shape}")
+                    
+                outputs = self.predict(batch_data)
+
+                if verbose:
+                    print(f"Shape of outputs: {outputs.shape}")
+
+                loss = self.compute_loss(outputs=outputs)
+                test_loss += loss.item()
+            
+        results.aucs = 0
+        results.precisions = 0
+        results.sensitivities = 0
+        results.f1s = 0
+        results.accuracies = 0
+        results.test_losses = test_loss / len(dataloader)
+        
+        return results

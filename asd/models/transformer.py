@@ -253,7 +253,7 @@ class GaussianNoise(BaseModel):
         self.std = 1
     
     def forward(self, x):
-        return x + th.randn((1, 256, 4))
+        return x + th.randn((1, 4, 256))
    
 
 class CutRearrange(BaseModel):
@@ -265,34 +265,31 @@ class CutRearrange(BaseModel):
     def forward(self, x):
         x = x.to(self.device)
 
-        # Assuming x has shape (batch_size, 256) or (256,)
-        if x.dim() == 1:
-            x = x.unsqueeze(0)  # Add batch dimension if not present
-        
-        batch_size, signal_length = x.shape
-        segment_length = signal_length // self.n_segments
+        batch_size, in_channels, height, width = x.shape
+
+        segment_length = width // self.n_segments
 
         # Split the signal into segments
-        x = x.view(batch_size, self.n_segments, segment_length)
-        
+        x = x.view(batch_size, in_channels, height, self.n_segments, segment_length)
+
         # Randomly permute the segments
         perm = th.randperm(self.n_segments)
-        x = x[:, perm, :]
-        
+        x = x[:,:,:, perm, :]
+
         # Merge the segments back into a single signal
-        x = x.view(batch_size, -1)
-        
+        x = x.view(batch_size, in_channels, height, width)
+
         return x
 
 class SSLTransformer(BaseModel):
     
-    def __init__(self, args):
+    def __init__(self, args, img_size=(4, 256), num_classes=2, patch_sizes=(4,4), in_channels=1, zero_head=False, n_segments=8):
         super().__init__(args=args)    
-        self.gaussian_noise = GaussianNoise()
-        self.cut_rearrange = CutRearrange()
+        self.gaussian_noise = GaussianNoise(args=args)
+        self.cut_rearrange = CutRearrange(args=args, n_segments=n_segments)
         
-        self.encoder1 = VisionTransformer(args=args)
-        self.encoder2 = VisionTransformer(args=args)
+        self.encoder1 = VisionTransformer(args=args, img_size=img_size, num_classes=num_classes, patch_sizes=patch_sizes, in_channels=in_channels, zero_head=zero_head)
+        self.encoder2 = VisionTransformer(args=args, img_size=img_size, num_classes=num_classes, patch_sizes=patch_sizes, in_channels=in_channels, zero_head=zero_head)
         
     def forward(self, x):
 
