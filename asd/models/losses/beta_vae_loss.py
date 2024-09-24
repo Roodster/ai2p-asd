@@ -16,7 +16,7 @@ class BetaVAELoss(nn.Module):
         self.beta = beta
         self.recon_loss_type = recon_loss_type
     
-    def forward(self, x, x_recon, mu, logvar):
+    def forward(self, outputs, x):
         """
         Compute the BetaVAE loss.
         
@@ -31,6 +31,8 @@ class BetaVAELoss(nn.Module):
             recon_loss: Reconstruction loss.
             kl_loss: KL divergence loss.
         """
+        
+        x_recon, mu, logvar = outputs
         # Reconstruction loss
         if self.recon_loss_type == 'mse':
             recon_loss = F.mse_loss(x_recon, x, reduction='sum')

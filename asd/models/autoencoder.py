@@ -73,16 +73,23 @@ class BetaEncoder(BaseModel):
     def __init__(self, args, latent_dim=16, n_channels=4):
         super(BetaEncoder, self).__init__(args)
        
-        self.conv1 = nn.Conv2d(n_channels, 32, 4, 2, 1)          # B,  32, 32, 32
-        self.conv2 = nn.Conv2d(32, 32, 4, 2, 1)          # B,  32, 16, 16
-        self.conv3 = nn.Conv2d(32, 32, 4, 2, 1)          # B,  32,  8,  8
-        self.conv4 = nn.Conv2d(32, 32, 4, 2, 1)          # B,  32,  4,  4
+        self.latent_dim = latent_dim
+        self.conv1 = nn.Conv2d(n_channels, 32, 2, 1, 1)          # B,  32, 32, 32
+        self.conv2 = nn.Conv2d(32, 32, 2, 1, 1)          # B,  32, 16, 16
+        self.conv3 = nn.Conv2d(32, 32, 2, 1, 1)          # B,  32,  8,  8
+        self.conv4 = nn.Conv2d(32, 32, 2, 1, 1)          # B,  32,  4,  4
         # View((-1, 32*4*4)),                  # B, 512
         self.linear1 = nn.Linear(32*4*4, 256)              # B, 256
         self.linear2 = nn.Linear(256, 256)                 # B, 256
         self.linear3 = nn.Linear(256, latent_dim*2)             # B, z_dim*2
 
         self.relu = nn.ReLU(True)
+        
+        #distribution setup
+        self.N = th.distributions.Normal(0, 1)
+        self.N.loc = self.N.loc.to(self.device) # hack to get sampling on the GPU
+        self.N.scale = self.N.scale.to(self.device)
+        
         
     def reparameterize(self, mu, sig):
         return mu + sig*self.N.sample(mu.shape)
@@ -98,8 +105,8 @@ class BetaEncoder(BaseModel):
         z = self.relu(self.linear2(z))
         z = self.relu(self.linear3(z))
         
-        mu = z[:, :self.z_dim]
-        logvar = z[:, self.z_dim:]
+        mu = z[:, :self.latent_dim]
+        logvar = z[:, self.latent_dim:]
         z = self.reparameterize(mu, logvar)
         
         return z, mu, logvar
@@ -126,10 +133,10 @@ class BetaDecoder(BaseModel):
         self.linear1 = nn.Linear(latent_dim, 256)               # B, 256
         self.linear2 = nn.Linear(256, 256)                 # B, 256
         self.linear3 = nn.Linear(256, 32*4*4)              # B, 512
-        self.conv1 = nn.ConvTranspose2d(32, 32, 4, 2, 1), # B,  32,  8,  8
-        self.conv2 = nn.ConvTranspose2d(32, 32, 4, 2, 1), # B,  32, 16, 16
-        self.conv3 = nn.ConvTranspose2d(32, 32, 4, 2, 1), # B,  32, 32, 32
-        self.conv4 = nn.ConvTranspose2d(32, n_channels, 4, 2, 1), # B,  nc, 64, 64
+        self.conv1 = nn.ConvTranspose2d(32, 32, 2, 1, 1) # B,  32,  8,  8
+        self.conv2 = nn.ConvTranspose2d(32, 32, 2, 1, 1) # B,  32, 16, 16
+        self.conv3 = nn.ConvTranspose2d(32, 32, 2, 1, 1) # B,  32, 32, 32
+        self.conv4 = nn.ConvTranspose2d(32, n_channels, 2, 1, 1) # B,  nc, 64, 64
         
         self.relu = nn.ReLU(True)        
         
@@ -138,11 +145,12 @@ class BetaDecoder(BaseModel):
     def forward(self, z):
         x = self.relu(self.linear1(z))
         x = self.relu(self.linear2(x))
+
         x = self.relu(self.linear3(x))
-        
-        x = x.view((-1, 32, 4, 4))
+        x = x.view((-1, 32, 8, 260)) # 32 is hidden size, 8 is 4 +4 and 260 is in_features + 4 for padding
         
         x = self.relu(self.conv1(x))
+
         x = self.relu(self.conv2(x))
         x = self.relu(self.conv3(x))
         x = self.relu(self.conv4(x))

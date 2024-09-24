@@ -165,6 +165,7 @@ class AELearner(Learner):
         train_loss = .0
         self.model.train()
         for batch_data, _ in data_loader:
+
             batch_data = batch_data.to(self.args.device)
             
             if verbose:
