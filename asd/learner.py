@@ -132,13 +132,6 @@ class Learner(BaseLearner):
         auc = roc_auc_score(all_labels, all_predictions, average='macro')
         overall_precision, overall_recall, overall_f1, _ = precision_recall_fscore_support(all_labels, all_predictions, average='macro')
 
-
-        print('auc: ', auc)
-        print('prec: ', overall_precision)
-        print('rec: ', overall_recall)
-        print('f1: ', overall_f1)
-        print('acc: ', accuracy)
-        print('loss: ', test_loss)
         # Sum up the values for all classes
         results.aucs = auc
         results.precisions = overall_precision

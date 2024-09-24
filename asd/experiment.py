@@ -40,7 +40,7 @@ class Experiment:
         # ===== SEEDING =====
         set_seed(args.seed)
     
-    def run(self, train_loader, test_loader, mode='binary'):
+    def run(self, train_loader, test_loader):
         assert train_loader is not None, "Please, provide a training dataset :)."        
         assert test_loader is not None, "Please, provide a test dataset :)."        
 
