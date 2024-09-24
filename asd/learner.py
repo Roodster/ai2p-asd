@@ -108,7 +108,7 @@ class Learner(BaseLearner):
                 
                 if verbose:
                     print(f"Shape of outputs: {outputs.shape}")
-                
+                    print(f'Outputs: \n {outputs}')
                 if self.label_transformer != None:
                     batch_labels = self.label_transformer(batch_labels)
                     if verbose:
@@ -119,8 +119,11 @@ class Learner(BaseLearner):
 
                 if len(outputs.shape) == 1:
                     outputs = (outputs > 0.5).int()
+                    print('outputs aah: ', outputs)
+
                 if len(outputs.shape) == 2:
                     _, outputs = outputs.max(1)
+                    print('outputs aah: ', outputs)
                 
                 all_labels.extend(batch_labels.cpu().numpy())
                 all_predictions.extend(outputs.cpu().numpy())
