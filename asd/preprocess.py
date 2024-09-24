@@ -5,6 +5,10 @@ from scipy import signal
 import random as rnd
 from concurrent.futures import ThreadPoolExecutor
 import multiprocessing
+import librosa as lib
+import librosa.feature as libf
+
+
 class BandpassFilter(BaseEstimator, TransformerMixin):
     def __init__(self, sfreq=256, lowcut=0, highcut=128, order=6):
         """
@@ -97,7 +101,7 @@ class SegmentSignals(BaseEstimator, TransformerMixin):
         
     
 class Spectrograms(BaseEstimator, TransformerMixin):
-    def __init__(self, fs=256, nperseg=None, noverlap=None, use_multithreading=False, max_workers=None):
+    def __init__(self, fs=256, nperseg=None, noverlap=None, window='tukey', use_multithreading=False, max_workers=None):
         """
         Converts segments of EEG data into spectrograms.
 
@@ -113,6 +117,7 @@ class Spectrograms(BaseEstimator, TransformerMixin):
         self.noverlap = int(noverlap * fs)
         self.use_multithreading = use_multithreading
         self.max_workers = max_workers if max_workers is not None else multiprocessing.cpu_count()
+        self.window = int(fs) // 4
     
     def fit(self, X, y=None):
         # No fitting necessary for this transformer, so just return self
@@ -120,11 +125,22 @@ class Spectrograms(BaseEstimator, TransformerMixin):
     
     def _process_channel(self, channel_data):
         """Process a single channel of data."""
-        f, t, Sxx = signal.spectrogram(channel_data, fs=self.fs,
-                                       nperseg=self.nperseg,
-                                       noverlap=self.noverlap)
-        return Sxx
+        # f, t, Sxx = signal.spectrogram(channel_data, fs=self.fs,
+        #                                nperseg=self.nperseg,
+        #                                noverlap=self.noverlap, 
+        #                                window=self.window,
+        #                                axis=1)
+        S = libf.melspectrogram(y=channel_data, sr=self.fs, n_mels=256)
 
+        S_db = lib.power_to_db(S)
+        # Normalize the spectrogram to the range [0, 1]
+        S_norm = np.average((S_db - np.min(S_db)) / (np.max(S_db) - np.min(S_db)), axis=3)
+
+        # Expand to 1 grayscale channel (optional step to keep the dimensions consistent)
+        S_gray = np.expand_dims(S_norm, axis=1)  # Shape becomes (1, height, width)
+
+        return S_gray
+        
     def transform(self, X, y=None):
         """
         Generate spectrograms for each EEG segment.
@@ -136,19 +152,7 @@ class Spectrograms(BaseEstimator, TransformerMixin):
         numpy.ndarray: Array of spectrograms of shape (n_segments, n_channels, n_frequencies, n_times).
         """
         segmented_data, y = X
-        n_segments, n_channels, _ = segmented_data.shape
-        spectrograms = []
-
-        for segment in segmented_data:
-            if self.use_multithreading:
-                with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
-                    segment_spectrograms = list(executor.map(self._process_channel, segment))
-            else:
-                segment_spectrograms = [self._process_channel(segment[channel]) for channel in range(n_channels)]
-            
-            stacked_spectrogram = np.stack(segment_spectrograms, axis=0)
-            spectrograms.append(stacked_spectrogram)
-
+        spectrograms = self._process_channel(channel_data=segmented_data)
         return (np.array(spectrograms), y)
     
     
@@ -218,6 +222,7 @@ class BalanceSeizureSegments(BaseEstimator, TransformerMixin):
         # Set the random seed if specified
         if self.random_state is not None:
             rnd.seed(self.random_state)
+            
         X = list(zip(X[0], X[1]))
 
         # Separate seizure and non-seizure segments
@@ -234,7 +239,7 @@ class BalanceSeizureSegments(BaseEstimator, TransformerMixin):
         balanced_segments = seizure_segments + sampled_non_seizure
 
         # Shuffle the combined segments
-        segments = np.array([signal for signal, _ in balanced_segments ])
+        segments = np.array([signal for signal, _ in balanced_segments])
         labels = np.array([label for _, label in balanced_segments])
     
         return (segments, labels) 
@@ -249,7 +254,7 @@ if __name__ == "__main__":
     
     
     dataset_path = "./data/dataset/train/raw/temp"
-    dataset_save_root_path = "./data/dataset/test/full-signals/"
+    dataset_save_root_path = "./data/dataset/teste/spectrograms/"
     
     files_list = load_edf_filepaths(dataset_path)
     
@@ -257,8 +262,8 @@ if __name__ == "__main__":
     for file in pbar: 
         # pbar.set_description(f"current file {file}")
 
-        channels="FZ-CZ;CZ-PZ;F8-T8;P4-O2;FP2-F8;F4-C4;C4-P4;P3-O1;FP2-F4;F3-C3;C3-P3;P7-O1;FP1-F3;F7-T7;T7-P7;FP1-F7"
-        eeg_file = load_eeg_file(file, channels=channels)
+        # channels="FZ-CZ;CZ-PZ;F8-T8;P4-O2;FP2-F8;F4-C4;C4-P4;P3-O1;FP2-F4;F3-C3;C3-P3;P7-O1;FP1-F3;F7-T7;T7-P7;FP1-F7"
+        eeg_file = load_eeg_file(file)
 
         if eeg_file == None:
             continue
@@ -269,7 +274,8 @@ if __name__ == "__main__":
         
         pipeline = Pipeline([('filters', BandpassFilter(sfreq=256,lowcut=1, highcut=40, order=6)),
                              ('normalizes',ZScoreNormalization()),
-                             ('segments', SegmentSignals(fs=256, segment_length=1, overlap=0))
+                             ('segments', SegmentSignals(fs=256, segment_length=4, overlap=0)),
+                             ('spectrograms', Spectrograms(fs=256, nperseg=4, noverlap=0))
                              ]) 
         
         

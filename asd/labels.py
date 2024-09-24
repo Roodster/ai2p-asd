@@ -25,11 +25,11 @@ class OHELabelTransformer(th.nn.Module):
             A tensor containing the one-hot encoded labels.
         """
         # Convert labels to one-hot encoding
-        one_hot = F.one_hot(y.to(th.float64), num_classes=self.num_classes)
+        one_hot = F.one_hot(y.to(th.int64), num_classes=self.num_classes)
 
         return one_hot
     
-class LongTensorLabelTransformer(th.nn.Module):
+class FloatTensorLabelTransformer(th.nn.Module):
     """Class to transform class labels using one-hot encoding."""
 
     def __init__(self, device):
@@ -39,7 +39,7 @@ class LongTensorLabelTransformer(th.nn.Module):
         Args:
             num_classes: The total number of classes.
         """
-        super(LongTensorLabelTransformer, self).__init__()
+        super(FloatTensorLabelTransformer, self).__init__()
         self.device = device
 
     def forward(self, y):
