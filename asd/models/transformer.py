@@ -117,7 +117,6 @@ class Embeddings(BaseModel):
     def forward(self, x):
         # print(f"Embeddings input {x.shape}")
         x = x.to(self.device)
-        x = x.unsqueeze(1)
         # print('input x', x.shape)
 
         B = x.shape[0]
@@ -201,17 +200,17 @@ class Encoder(BaseModel):
 
 
 class Transformer(BaseModel):
-    def __init__(self, args, img_size=(4)):
+    def __init__(self, args, img_size=(4,256), patch_sizes=(4,4), in_channels=1):
         super(Transformer, self).__init__(args=args)
-        self.embeddings = Embeddings(args, img_size=img_size).to(self.device)
+        self.embeddings = Embeddings(args, img_size=img_size, patch_sizes=patch_sizes, in_channels=in_channels).to(self.device)
         self.encoder = Encoder(args).to(self.device)
 
-    def forward(self, input_ids):
-        input_ids = input_ids.to(self.device)
+    def forward(self, x):
+        x = x.to(self.device)
 
         # print(f"Transformer {input_ids.shape}")
 
-        embedding_output = self.embeddings(input_ids)
+        embedding_output = self.embeddings(x)
         # print(f"Encoder encoded {embedding_output.shape}")
 
         encoded = self.encoder(embedding_output)
@@ -221,12 +220,12 @@ class Transformer(BaseModel):
 
 
 class VisionTransformer(BaseModel):
-    def __init__(self, args, img_size=256, num_classes=2, zero_head=False):
+    def __init__(self, args, img_size=(4, 256), num_classes=2, patch_sizes=(4,4), in_channels=1, zero_head=False):
         super(VisionTransformer, self).__init__(args=args)
         self.num_classes = num_classes
         self.zero_head = zero_head
 
-        self.transformer = Transformer(args, img_size=img_size).to(self.device)
+        self.transformer = Transformer(args, img_size=img_size, patch_sizes=patch_sizes, in_channels=in_channels).to(self.device)
         self.head = Linear(256, num_classes).to(self.device)
 
     def forward(self, x, labels=None):

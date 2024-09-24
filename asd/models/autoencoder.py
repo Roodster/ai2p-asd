@@ -5,48 +5,53 @@ from torch.utils.data import DataLoader
 
 from asd.models.base import BaseModel
 
-class ShallowDecoder(BaseModel):
-    
-    def __init__(self, args, input_dim, output_dim):
-        super(ShallowDecoder, self).__init__(args)
-        
-        self.linear1 = nn.Linear(input_dim, output_dim, bias=True)
-        self.leaky_relu = nn.LeakyReLU(0.2)
-        
-    def forward(self, x):
-        x = self.leaky_relu(self.linear1(x))
-        return x
-
+#encoder
 class ShallowEncoder(BaseModel):
-    
-    
-    
-    def __init__(self, args, input_dim=256, hidden_dim=64):
-        super(ShallowEncoder, self).__init__(args)
-        
-        self.linear1 = nn.Linear(input_dim, hidden_dim, bias=True)
-        self.leaky_relu = nn.LeakyReLU(0.2)
+    def __init__(self, args, in_features, latent_dims, channels=4):
+        super(ShallowEncoder, self).__init__(args=args)
+        self.latent_dims = latent_dims
+        self.in_features = in_features
+        self.channels = channels
+        self.linear1 = nn.Linear(in_features=in_features*channels, out_features=latent_dims)
+        self.relu = nn.ReLU()
 
 
     def forward(self, x):
-        x = self.leaky_relu(self.linear1(x))
-        return x
-                
 
+        x = th.flatten(x, start_dim=1)
+        x = self.relu(self.linear1(x))
+        return x
+
+#decoder
+class ShallowDecoder(BaseModel):
+    def __init__(self, args, latent_dims, out_features, channels):
+        super(ShallowDecoder, self).__init__(args=args)
+
+        self.latent_dims = latent_dims
+        self.out_features = out_features
+        self.channels = channels
+        self.linear1 = nn.Linear(in_features=latent_dims, out_features=out_features*channels)
+        self.relu    = nn.ReLU()
+    
+    def forward(self, z):
+
+        z = self.relu(self.linear1(z))
+        z = z.reshape((-1, 1, self.channels, self.out_features))
+
+        return z
+
+#autoencoder
 class ShallowAE(BaseModel):
-    
-    def __init__(self, args, input_dim=256, hidden_dim=64):
-        super(ShallowAE, self).__init__(args)
-        
-        self.encoder = ShallowEncoder(args, input_dim=input_dim, hidden_dim=hidden_dim)
-        self.decoder = ShallowDecoder(args, input_dim=hidden_dim, output_dim=input_dim)
-        
-    
+    def __init__(self, args, in_features, latent_dims, channels=4):
+        super(ShallowAE, self).__init__(args=args)
+
+        self.encoder = ShallowEncoder(args=args, in_features=in_features, latent_dims=latent_dims, channels=channels)
+        self.decoder = ShallowDecoder(args=args, latent_dims=latent_dims, out_features=in_features, channels=channels)
+
     def forward(self, x):
-        x = self.encoder(x)
-        x = self.decoder(x)
-        
-        return x
+        z = self.encoder(x)
+        y = self.decoder(z)
+        return y
     
 class SoftMaxClassifier(BaseModel):
     
