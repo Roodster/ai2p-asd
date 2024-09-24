@@ -121,12 +121,20 @@ class Learner(BaseLearner):
                     outputs = (outputs > 0.5).int()
 
                 if len(outputs.shape) == 2:
+                    print(outputs.max(1))
                     _, outputs = outputs.max(1)
-                
+    
+                if verbose:
+                    print(f"Shape of outputs: {outputs.shape}")
+                    print(f'Outputs: \n {outputs}')
+                    
                 all_labels.extend(batch_labels.cpu().numpy())
                 all_predictions.extend(outputs.cpu().numpy())
 
-
+        if verbose:
+            print(f'Predictions: \n {all_predictions}')
+            print(f'Labels: \n {all_labels}')
+                    
         # Calculate overall metrics
         accuracy = accuracy_score(all_labels, all_predictions)
         auc = roc_auc_score(all_labels, all_predictions, average='macro')
