@@ -93,7 +93,10 @@ class OnlineSegmentsDataset(Dataset):
 
         npz_file = np.load(self.file_list[idx])
         segment = torch.from_numpy(npz_file['x'].astype(np.float32))
-        
+
+        if len(segment.shape)== 2:
+            segment = segment.reshape(1, segment.shape[0], segment.shape[1]) 
+                
         label = torch.from_numpy(npz_file['y'].astype(np.float32))        
         return segment, label
     
@@ -162,6 +165,10 @@ class OfflineSegmentsDataset(Dataset):
         for file_path in pbar:
             npz_file = np.load(file_path)
             segment = torch.from_numpy(npz_file['x'].astype(np.float32))
+            
+            if len(segment.shape)== 2:
+                segment = segment.reshape(1, segment.shape[0], segment.shape[1]) 
+                
             label = torch.from_numpy(npz_file['y'].astype(np.float32))
             data.append((segment, label))
         return data
