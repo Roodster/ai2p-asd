@@ -124,7 +124,6 @@ class Learner(BaseLearner):
                     outputs = (outputs > 0.5).int()
 
                 if len(outputs.shape) == 2:
-                    print(outputs.max(1))
                     _, outputs = outputs.max(1)
     
                 if verbose:
