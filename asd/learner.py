@@ -19,7 +19,7 @@ class BaseLearner:
 
         # ===== DEPENDENCIES =====
         self.args = args
-        self.model = model
+        self.model = model.to(self.args.device)
         self.optimizer = optimizer
         self.criterion = criterion
     
@@ -29,7 +29,7 @@ class BaseLearner:
         self.optimizer.step()
         
     def predict(self, batch_data):
-        outputs = self.model(batch_data).to(self.args.device)
+        outputs = self.model(batch_data)
         return outputs
 
     def reset(self):
@@ -38,7 +38,7 @@ class BaseLearner:
                 layer.reset_parameters()
     
     def compute_loss(self, y_pred, y_test):
-        loss =  Variable(self.criterion(y_pred, y_test), requires_grad = True)
+        loss =  self.criterion(y_pred, y_test)
         return loss
     
 class Learner(BaseLearner):
@@ -119,11 +119,9 @@ class Learner(BaseLearner):
 
                 if len(outputs.shape) == 1:
                     outputs = (outputs > 0.5).int()
-                    print('outputs aah: ', outputs)
 
                 if len(outputs.shape) == 2:
                     _, outputs = outputs.max(1)
-                    print('outputs aah: ', outputs)
                 
                 all_labels.extend(batch_labels.cpu().numpy())
                 all_predictions.extend(outputs.cpu().numpy())
