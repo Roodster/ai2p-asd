@@ -28,3 +28,31 @@ class OHELabelTransformer(th.nn.Module):
         one_hot = F.one_hot(y.to(th.float64), num_classes=self.num_classes)
 
         return one_hot
+    
+class LongTensorLabelTransformer(th.nn.Module):
+    """Class to transform class labels using one-hot encoding."""
+
+    def __init__(self, device):
+        """
+        Initializes the label transformer.
+
+        Args:
+            num_classes: The total number of classes.
+        """
+        super(LongTensorLabelTransformer, self).__init__()
+        self.device = device
+
+    def forward(self, y):
+        """
+        Transforms the input labels using one-hot encoding.
+
+        Args:
+            x: A tensor containing the input labels.
+
+        Returns:
+            A tensor containing the one-hot encoded labels.
+        """
+        # Convert labels to one-hot encoding
+        y = y.to(self.device).float()
+
+        return y
