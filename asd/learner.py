@@ -100,6 +100,8 @@ class Learner(BaseLearner):
             for batch_data, batch_labels in dataloader:
                 batch_data, batch_labels = batch_data.to(self.device), batch_labels.to(self.device)
                 
+                true_labels = batch_labels.detach().clone()
+                
                 if verbose:
                     print(f"Shape of batch_data: {batch_data.shape}")
                     print(f"Shape of batch_labels: {batch_labels.shape} ")
@@ -110,11 +112,12 @@ class Learner(BaseLearner):
                     print(f"Shape of outputs: {outputs.shape}")
                     print(f'Outputs: \n {outputs}')
                 if self.label_transformer != None:
-                    batch_labels = self.label_transformer(batch_labels)
+                    true_labels = self.label_transformer(batch_labels)
                     if verbose:
-                        print(f"Shape of labels: {batch_labels.shape}")  
+                        print(f"Shape of labels: {true_labels.shape}")  
                 
-                loss = self.criterion(outputs, batch_labels)
+        
+                loss = self.criterion(outputs, true_labels)
                 test_loss += loss.item()
 
                 if len(outputs.shape) == 1:
