@@ -78,7 +78,7 @@ class Results:
             
         losses = [self._train_losses[epoch]  for epoch in self._epochs]
         first_elem = losses[0]
-        normalized_losses = [(loss/first_elem) for loss in losses]
+        normalized_losses = [(loss-first_elem)/first_elem for loss in losses]
     
         return normalized_losses 
     
@@ -98,7 +98,7 @@ class Results:
         losses = self._test_losses
         first_elem = losses[0]
         
-        normalized_losses = [(loss/first_elem) for loss in losses]
+        normalized_losses = [(loss-first_elem)/first_elem for loss in losses]
         
         return normalized_losses
     
