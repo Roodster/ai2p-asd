@@ -253,7 +253,7 @@ class GaussianNoise(BaseModel):
         self.std = 1
     
     def forward(self, x):
-        return x + th.randn((1, 4, 256))
+        return x.to(self.device) + th.randn((1, 4, 256)).to(self.device)
    
 
 class CutRearrange(BaseModel):
