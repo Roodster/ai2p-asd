@@ -26,19 +26,29 @@ class ContrastiveLoss(nn.Module):
         
         # Calculate the full similarity matrix for the transformed features
         combined_transformed = th.cat([first_transformed, second_transformed], dim=0)  # [2*batch_size, features]
+        
+        print('combined: ', combined_transformed)
         similarity_matrix = self.similarity(combined_transformed.unsqueeze(1), combined_transformed.unsqueeze(0))  # [2*batch_size, 2*batch_size]
+        print('similarity_matrix: ', similarity_matrix)
 
         # Mask out the diagonal (self-similarity)
         mask = th.eye(2 * batch_size, device=similarity_matrix.device).bool()
+        print('mask: ', mask)
+
+
         similarity_matrix.masked_fill_(mask, float('-inf'))
 
         # Split similarity matrix into positive and negative pairs
         positive_similarities = pos_similarity / self.temperature
-        
+        print('positive_similarities: ', positive_similarities)
+
         # Negative pairs: log-sum-exp trick
         neg_similarities = F.log_softmax(similarity_matrix / self.temperature, dim=1)
-        
+        print('neg_similarities: ', neg_similarities)
+
         # Contrastive loss: sum of positive and negative log-sum-exp losses
         loss = -positive_similarities.mean() + neg_similarities.mean()
-        
+        print('loss: ', loss)
+
+
         return loss

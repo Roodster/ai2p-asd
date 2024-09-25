@@ -261,9 +261,6 @@ class SSLLearner(AELearner):
                 print(f"Shape of batch_data: {batch_data.shape}")
             
             outputs = self.predict(batch_data)
-        
-            if verbose:
-                print(f"Shape of outputs: {outputs.shape}")
                     
             loss = self.compute_loss(outputs=outputs)    
             self.update(loss)
@@ -291,9 +288,6 @@ class SSLLearner(AELearner):
                     print(f"Shape of batch_data: {batch_data.shape}")
                     
                 outputs = self.predict(batch_data)
-
-                if verbose:
-                    print(f"Shape of outputs: {outputs.shape}")
 
                 loss = self.compute_loss(outputs=outputs)
                 test_loss += loss.item()
