@@ -268,8 +268,13 @@ class SSLLearner(AELearner):
             loss = self.compute_loss(outputs=outputs)    
             self.update(loss)
             train_loss += loss.item()
-        
+
+
+        if verbose:
+            print(f"Train loss: {train_loss}")
+                    
         results.train_losses = train_loss / len(data_loader)
+
 
         return results
 
@@ -292,6 +297,9 @@ class SSLLearner(AELearner):
 
                 loss = self.compute_loss(outputs=outputs)
                 test_loss += loss.item()
+
+        if verbose:
+            print(f"Test loss: {test_loss}")
             
         results.aucs = 0
         results.precisions = 0
