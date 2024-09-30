@@ -27,7 +27,7 @@ class ShallowDecoder(BaseModel):
     def __init__(self, args, hidden_dim, out_features, channels):
         super(ShallowDecoder, self).__init__(args=args)
 
-        self.hidden_dim = hidden_dim
+        self.hidden_dim = hidden_dim #in_features
         self.out_features = out_features
         self.channels = channels
         self.linear1 = nn.Linear(input_dim=hidden_dim, out_features=out_features*channels)
