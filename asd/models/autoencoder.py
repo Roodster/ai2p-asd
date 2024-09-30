@@ -12,7 +12,7 @@ class ShallowEncoder(BaseModel):
         self.hidden_dim = hidden_dim
         self.input_dim = input_dim
         self.channels = channels
-        self.linear1 = nn.Linear(input_dim=input_dim*channels, out_features=hidden_dim)
+        self.linear1 = nn.Linear(in_features=input_dim*channels, out_features=hidden_dim)
         self.relu = nn.ReLU()
 
 
@@ -30,7 +30,7 @@ class ShallowDecoder(BaseModel):
         self.hidden_dim = hidden_dim #in_features
         self.out_features = out_features
         self.channels = channels
-        self.linear1 = nn.Linear(input_dim=hidden_dim, out_features=out_features*channels)
+        self.linear1 = nn.Linear(in_features=hidden_dim, out_features=out_features*channels)
         self.relu    = nn.ReLU()
     
     def forward(self, z):
