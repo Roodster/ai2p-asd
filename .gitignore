@@ -13,6 +13,8 @@ notebooks/data
 **/logs
 **.ipynb
 *.pth
+*.pkl
+**/data/models/
 
 
 # Byte-compiled / optimized / DLL files

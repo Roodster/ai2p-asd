@@ -105,3 +105,12 @@ def set_seed(seed):
     th.backends.cudnn.benchmark = False
     th.backends.cudnn.deterministic = True
     th.Generator().manual_seed(seed)
+    
+    
+def freeze_params(model):
+    
+    for param in model.parameters():
+        param.required_grad = False
+        
+    return model
+    
