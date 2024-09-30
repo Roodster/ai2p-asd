@@ -261,15 +261,17 @@ class SSLLearner(AELearner):
                 print(f"Shape of batch_data: {batch_data.shape}")
             
             outputs = self.predict(batch_data)
-        
-            if verbose:
-                print(f"Shape of outputs: {outputs.shape}")
                     
             loss = self.compute_loss(outputs=outputs)    
             self.update(loss)
             train_loss += loss.item()
-        
+
+
+        if verbose:
+            print(f"Train loss: {train_loss}")
+                    
         results.train_losses = train_loss / len(data_loader)
+
 
         return results
 
@@ -287,11 +289,11 @@ class SSLLearner(AELearner):
                     
                 outputs = self.predict(batch_data)
 
-                if verbose:
-                    print(f"Shape of outputs: {outputs.shape}")
-
                 loss = self.compute_loss(outputs=outputs)
                 test_loss += loss.item()
+
+        if verbose:
+            print(f"Test loss: {test_loss}")
             
         results.aucs = 0
         results.precisions = 0

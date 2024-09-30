@@ -57,7 +57,7 @@ class SoftMaxClassifier(BaseModel):
     
     def __init__(self, args, input_dim=256, hidden_dim=256, output_dim=2):
         super(SoftMaxClassifier, self).__init__(args)
-        self.encoder = ShallowEncoder(args, input_dim, hidden_dim=hidden_dim)
+        self.encoder = ShallowEncoder(args, input_dim, latent=hidden_dim)
         self.linear = nn.Linear(hidden_dim, out_features=output_dim)
         self.softmax = nn.Softmax(dim=1)
         
@@ -86,7 +86,8 @@ class BetaEncoder(BaseModel):
         self.relu = nn.ReLU(True)
         
         #distribution setup
-        self.N = th.distributions.Normal(0, 1)
+        self.eps_w = 0.1
+        self.N = th.distributions.Normal(0, self.eps_w)
         self.N.loc = self.N.loc.to(self.device) # hack to get sampling on the GPU
         self.N.scale = self.N.scale.to(self.device)
         
@@ -185,3 +186,132 @@ class BetaVAE(BaseModel):
     
     
     
+class Encoder(nn.Module):
+    def __init__(self, input_size=4096, hidden_size=1024, num_layers=2):
+        super(Encoder, self).__init__()
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
+        self.lstm = nn.LSTM(
+            input_size,
+            hidden_size,
+            num_layers,
+            batch_first=True,
+            bidirectional=True,
+        )
+
+    def forward(self, x):
+        # x: tensor of shape (batch_size, seq_length, hidden_size)
+        outputs, (hidden, cell) = self.lstm(x)
+        return (hidden, cell)
+
+
+class Decoder(nn.Module):
+    def __init__(
+        self, input_size=4, hidden_size=64, output_size=4, num_layers=2):
+        super(Decoder, self).__init__()
+        self.hidden_size = hidden_size
+        self.output_size = output_size
+        self.num_layers = num_layers
+        self.lstm = nn.LSTM(
+            input_size,
+            hidden_size,
+            num_layers,
+            batch_first=True,
+            bidirectional=True,
+        )
+        self.fc = nn.Linear(hidden_size, output_size)
+
+    def forward(self, x, hidden):
+        # x: tensor of shape (batch_size, seq_length, hidden_size)
+        output, (hidden, cell) = self.lstm(x, hidden)
+        prediction = self.fc(output)
+        return prediction, (hidden, cell)
+
+
+class LSTMVAE(nn.Module):
+    """LSTM-based Variational Auto Encoder"""
+
+    def __init__(
+        self, input_size, hidden_size, latent_size, device=th.device("cuda")
+    ):
+        """
+        input_size: int, batch_size x sequence_length x input_dim
+        hidden_size: int, output size of LSTM AE
+        latent_size: int, latent z-layer size
+        num_lstm_layer: int, number of layers in LSTM
+        """
+        super(LSTMVAE, self).__init__()
+        self.device = device
+
+        # dimensions
+        self.input_size = input_size
+        self.hidden_size = hidden_size
+        self.latent_size = latent_size
+        self.num_layers = 1
+
+        # lstm ae
+        self.lstm_enc = Encoder(
+            input_size=input_size, hidden_size=hidden_size, num_layers=self.num_layers
+        )
+        self.lstm_dec = Decoder(
+            input_size=latent_size,
+            output_size=input_size,
+            hidden_size=hidden_size,
+            num_layers=self.num_layers,
+        )
+
+        self.fc21 = nn.Linear(self.hidden_size, self.latent_size)
+        self.fc22 = nn.Linear(self.hidden_size, self.latent_size)
+        self.fc3 = nn.Linear(self.latent_size, self.hidden_size)
+
+    def reparametize(self, mu, logvar):
+        std = th.exp(0.5 * logvar)
+        noise = th.randn_like(std).to(self.device)
+
+        z = mu + noise * std
+        return z
+
+    def forward(self, x):
+        batch_size, n_channels, feature_dim, seq_len = x.shape
+        x = x.reshape(batch_size, seq_len, feature_dim)
+        
+#         print('x1: ', x.shape)
+        # encode input space to hidden space
+        enc_hidden = self.lstm_enc(x)
+
+        enc_h = enc_hidden[0].view(batch_size, self.hidden_size).to(self.device)
+#         print('enc_hidden1: ', enc_h.shape)
+
+        # extract latent variable z(hidden space to latent space)
+        mean = self.fc21(enc_h)
+#         print('mean: ', mean.shape)
+
+        logvar = self.fc22(enc_h)
+#         print('logvar: ', logvar.shape)
+
+        z = self.reparametize(mean, logvar)  # batch_size x latent_size
+
+#         print('z1: ', z.shape)
+        # initialize hidden state as inputs
+        h_ = self.fc3(z)
+#         print('h_: ', h_.shape)
+
+        # decode latent space to input space
+        z = z.repeat(1, seq_len, 1)
+#         print('z2: ', z.shape)
+
+        z = z.view(batch_size, seq_len, self.latent_size).to(self.device)
+#         print('z3: ', z.shape)
+
+        # initialize hidden state
+        hidden = (h_.contiguous().unsqueeze(0), h_.contiguous().unsqueeze(0))
+
+        reconstruct_output, hidden = self.lstm_dec(z, hidden)
+#         print('reconstruct_output: ', reconstruct_output.shape)
+        
+        reconstruct_output = reconstruct_output.unsqueeze(1).reshape(-1, 1, feature_dim, seq_len)
+
+        return reconstruct_output, mean, logvar
+
+
+

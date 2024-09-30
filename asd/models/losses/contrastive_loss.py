@@ -35,8 +35,8 @@ class ContrastiveLoss(nn.Module):
         # Split similarity matrix into positive and negative pairs
         positive_similarities = pos_similarity / self.temperature
         
-        # Negative pairs: log-sum-exp trick
-        neg_similarities = F.log_softmax(similarity_matrix / self.temperature, dim=1)
+        # Negative pairs
+        neg_similarities = F.softmax(similarity_matrix / self.temperature, dim=1)
         
         # Contrastive loss: sum of positive and negative log-sum-exp losses
         loss = -positive_similarities.mean() + neg_similarities.mean()

@@ -23,10 +23,12 @@ class Experiment:
         self.label_transformer = label_transformer
         
         self.start_epochs = len(self.results.epochs)
+        self.last_epoch = self.start_epochs
         
          # ===== TRAINING =====
         self.device = args.device
         self.n_epochs = args.n_epochs       
+        
         
         
         # ===== EVALUATION =====
@@ -46,10 +48,10 @@ class Experiment:
 
         self.writer.save_hyperparameters(self.args)
 
-        pbar = tqdm(range(self.start_epochs, self.start_epochs + self.n_epochs))
+        pbar = tqdm(range(self.last_epoch, self.last_epoch + self.n_epochs))
         
         for epoch in pbar:
-            
+            self.last_epoch += 1
             self.results = self.learner.step(train_loader, results=self.results, verbose=self.verbose)
             
             if (epoch + 1) % self.eval_interval == 0: 
