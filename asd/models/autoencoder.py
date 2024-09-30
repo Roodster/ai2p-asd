@@ -7,12 +7,12 @@ from asd.models.base import BaseModel
 
 #encoder
 class ShallowEncoder(BaseModel):
-    def __init__(self, args, in_features, latent_dims, channels=4):
+    def __init__(self, args, input_dim, hidden_dim, channels=4):
         super(ShallowEncoder, self).__init__(args=args)
-        self.latent_dims = latent_dims
-        self.in_features = in_features
+        self.hidden_dim = hidden_dim
+        self.input_dim = input_dim
         self.channels = channels
-        self.linear1 = nn.Linear(in_features=in_features*channels, out_features=latent_dims)
+        self.linear1 = nn.Linear(input_dim=input_dim*channels, out_features=hidden_dim)
         self.relu = nn.ReLU()
 
 
@@ -24,13 +24,13 @@ class ShallowEncoder(BaseModel):
 
 #decoder
 class ShallowDecoder(BaseModel):
-    def __init__(self, args, latent_dims, out_features, channels):
+    def __init__(self, args, hidden_dim, out_features, channels):
         super(ShallowDecoder, self).__init__(args=args)
 
-        self.latent_dims = latent_dims
+        self.hidden_dim = hidden_dim
         self.out_features = out_features
         self.channels = channels
-        self.linear1 = nn.Linear(in_features=latent_dims, out_features=out_features*channels)
+        self.linear1 = nn.Linear(input_dim=hidden_dim, out_features=out_features*channels)
         self.relu    = nn.ReLU()
     
     def forward(self, z):
@@ -42,11 +42,11 @@ class ShallowDecoder(BaseModel):
 
 #autoencoder
 class ShallowAE(BaseModel):
-    def __init__(self, args, in_features, latent_dims, channels=4):
+    def __init__(self, args, input_dim, hidden_dim, channels=4):
         super(ShallowAE, self).__init__(args=args)
 
-        self.encoder = ShallowEncoder(args=args, in_features=in_features, latent_dims=latent_dims, channels=channels)
-        self.decoder = ShallowDecoder(args=args, latent_dims=latent_dims, out_features=in_features, channels=channels)
+        self.encoder = ShallowEncoder(args=args, input_dim=input_dim, hidden_dim=hidden_dim, channels=channels)
+        self.decoder = ShallowDecoder(args=args, hidden_dim=hidden_dim, out_features=input_dim, channels=channels)
 
     def forward(self, x):
         z = self.encoder(x)
@@ -147,7 +147,7 @@ class BetaDecoder(BaseModel):
         x = self.relu(self.linear2(x))
 
         x = self.relu(self.linear3(x))
-        x = x.view((-1, 32, 8, 260)) # 32 is hidden size, 8 is 4 +4 and 260 is in_features + 4 for padding
+        x = x.view((-1, 32, 8, 260)) # 32 is hidden size, 8 is 4 +4 and 260 is input_dim + 4 for padding
         
         x = self.relu(self.conv1(x))
 
