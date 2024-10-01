@@ -57,7 +57,7 @@ class SoftMaxClassifier(BaseModel):
     
     def __init__(self, args, input_dim=256, hidden_dim=256, output_dim=2):
         super(SoftMaxClassifier, self).__init__(args)
-        self.encoder = ShallowEncoder(args, input_dim, latent=hidden_dim)
+        self.encoder = ShallowEncoder(args, input_dim, hidden_dim=hidden_dim)
         self.linear = nn.Linear(hidden_dim, out_features=output_dim)
         self.softmax = nn.Softmax(dim=1)
         
