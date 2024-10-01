@@ -882,8 +882,10 @@ if __name__ == "__main__":
         eeg_data = eeg_file.data
         labels = eeg_file.get_labels()
         
-        X, y = get_svm_features(X=eeg_data, y=labels, max_workers=8)  # Adjust max_workers as needed
-
+        pipeline = Pipeline([
+            ('bandpass', BandpassFilter(sfreq=256, lowcut=1, highcut=40, order=6)),
+            ('segment', SegmentSignals(fs=256, segment_length=1, ))
+            ])
         save_dir, filename = clean_path(file, dataset_path)
         save_dir = dataset_save_root_path + save_dir
         filename = filename.split('.')[0]        
