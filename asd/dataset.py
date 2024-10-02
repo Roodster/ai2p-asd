@@ -92,8 +92,12 @@ class OnlineSegmentsDataset(Dataset):
     def __getitem__(self, idx):
 
         npz_file = np.load(self.file_list[idx])
+
         segment = torch.from_numpy(npz_file['x'].astype(np.float32))
-        
+
+        if len(segment.shape)== 2:
+            segment = segment.reshape(1, segment.shape[0], segment.shape[1]) 
+                
         label = torch.from_numpy(npz_file['y'].astype(np.float32))        
         return segment, label
     
@@ -162,8 +166,13 @@ class OfflineSegmentsDataset(Dataset):
         for file_path in pbar:
             npz_file = np.load(file_path)
             segment = torch.from_numpy(npz_file['x'].astype(np.float32))
+                        
+            if len(segment.shape)== 2:
+                segment = segment.reshape(1, segment.shape[0], segment.shape[1]) 
+                
             label = torch.from_numpy(npz_file['y'].astype(np.float32))
             data.append((segment, label))
+
         return data
 
     def __len__(self):
@@ -180,8 +189,65 @@ class OfflineSegmentsDataset(Dataset):
             tuple: (segment, label, load_time)
         """
         segment, label = self.data[idx]
-                
+        
         return segment, label
+    
+    
+    
+class OfflineFeaturesDataset(OfflineSegmentsDataset):
+    def __init__(self, root_dir, mode='full', patient_id=None):
+        """
+        
+
+        Args:
+            root_dir: path to directory
+            modes: 
+                'full': uses data from all patients.
+                'train': exclude data from given id
+                'test': only include data from given id
+            id: patient id to include/exlude data. Depends on mode.
+        """
+        super(OfflineFeaturesDataset, self).__init__(root_dir=root_dir, mode=mode, patient_id=patient_id)
+
+
+    def _load_data(self):
+        """
+        Loads all data into RAM during initialization.
+
+        Returns:
+            list: A list of tuples where each tuple contains a segment tensor and a label tensor.
+        """
+        data = []
+        pbar = tqdm(self.file_list)
+        pbar.set_description("Loading dataset...")
+        for file_path in pbar:
+            pbar.set_description(f"Loading file: {file_path}")
+            npz_file = np.load(file_path)
+            segment = torch.from_numpy(npz_file['x'].real)
+            
+                
+            segment = segment.flatten()
+
+            label = torch.from_numpy(npz_file['y'].astype(np.float32))
+
+            data.append((segment, label))
+
+        return data
+    
+
+    def __getitem__(self, idx):
+        """
+        Returns the segment, label, and loading time for the specified index.
+
+        Args:
+            idx (int): Index of the data to retrieve.
+
+        Returns:
+            tuple: (segment, label, load_time)
+        """
+        data = self.data[idx]
+        return data
+    
     
     
 class MNISTDataset(Dataset):

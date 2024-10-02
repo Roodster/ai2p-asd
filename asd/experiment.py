@@ -11,7 +11,7 @@ from asd.results import Results
 class Experiment:
     
     
-    def __init__(self, args, learner, results, label_transformer=None, verbose=False):
+    def __init__(self, args, learner, results, label_transformer=None, do_plot=True, verbose=False):
         assert learner is not None, "NO learner"
 
         # ===== DEPENDENCIES =====
@@ -23,10 +23,12 @@ class Experiment:
         self.label_transformer = label_transformer
         
         self.start_epochs = len(self.results.epochs)
+        self.last_epoch = self.start_epochs
         
          # ===== TRAINING =====
         self.device = args.device
         self.n_epochs = args.n_epochs       
+        
         
         
         # ===== EVALUATION =====
@@ -36,6 +38,7 @@ class Experiment:
         self.save_model_interval = args.eval_save_model_interval
         
         self.verbose = verbose
+        self.do_plot = do_plot
         
         # ===== SEEDING =====
         set_seed(args.seed)
@@ -46,10 +49,10 @@ class Experiment:
 
         self.writer.save_hyperparameters(self.args)
 
-        pbar = tqdm(range(self.start_epochs, self.start_epochs + self.n_epochs))
+        pbar = tqdm(range(self.last_epoch, self.last_epoch + self.n_epochs))
         
         for epoch in pbar:
-            
+            self.last_epoch += 1
             self.results = self.learner.step(train_loader, results=self.results, verbose=self.verbose)
             
             if (epoch + 1) % self.eval_interval == 0: 
@@ -64,9 +67,11 @@ class Experiment:
             if self.verbose:
                 self.results.print()
                 
-            self.plots.plot(results=self.results, update=True)
+            if self.do_plot:
+                self.plots.plot(results=self.results, update=True)
     
-        self.plots.plot(results=self.results, update=False)
+        if self.do_plot:
+            self.plots.plot(results=self.results, update=False)
         self.writer.save_statistics(self.results.get())
 
             

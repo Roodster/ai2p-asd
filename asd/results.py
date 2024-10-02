@@ -73,14 +73,14 @@ class Results:
     # Property and setter for train_losses
     @property
     def train_losses(self):
-        if self.verbose:
-            print('train loss: \n', self._train_losses)
+        # if self.verbose:
+        #     print('train loss: \n', self._train_losses)
             
-        losses = [self._train_losses[epoch]  for epoch in self._epochs]
-        first_elem = losses[0]
-        normalized_losses = [(loss/first_elem) for loss in losses]
+        # losses = [self._train_losses[epoch]  for epoch in self._epochs]
+        # first_elem = losses[0]
+        # normalized_losses = [(loss-first_elem)/first_elem for loss in losses]
     
-        return normalized_losses 
+        return self._train_losses 
     
     @train_losses.setter
     def train_losses(self, value):
@@ -89,18 +89,18 @@ class Results:
     # Property and setter for test_losses
     @property
     def test_losses(self):
-        if self.verbose:
-            print('test_losses: \n', self._test_losses)
+        # if self.verbose:
+        #     print('test_losses: \n', self._test_losses)
         
-        if len(self._test_losses) == 0:
-            return []
+        # if len(self._test_losses) == 0:
+        #     return []
         
-        losses = self._test_losses
-        first_elem = losses[0]
+        # losses = self._test_losses
+        # first_elem = losses[0]
         
-        normalized_losses = [(loss/first_elem) for loss in losses]
+        # normalized_losses = [(loss-first_elem)/first_elem for loss in losses]
         
-        return normalized_losses
+        return self._test_losses 
     
     @test_losses.setter
     def test_losses(self, value):
