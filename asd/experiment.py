@@ -11,7 +11,7 @@ from asd.results import Results
 class Experiment:
     
     
-    def __init__(self, args, learner, results, label_transformer=None, verbose=False):
+    def __init__(self, args, learner, results, label_transformer=None, do_plot=True, verbose=False):
         assert learner is not None, "NO learner"
 
         # ===== DEPENDENCIES =====
@@ -38,6 +38,7 @@ class Experiment:
         self.save_model_interval = args.eval_save_model_interval
         
         self.verbose = verbose
+        self.do_plot = do_plot
         
         # ===== SEEDING =====
         set_seed(args.seed)
@@ -66,9 +67,11 @@ class Experiment:
             if self.verbose:
                 self.results.print()
                 
-            self.plots.plot(results=self.results, update=True)
+            if self.do_plot:
+                self.plots.plot(results=self.results, update=True)
     
-        self.plots.plot(results=self.results, update=False)
+        if self.do_plot:
+            self.plots.plot(results=self.results, update=False)
         self.writer.save_statistics(self.results.get())
 
             
