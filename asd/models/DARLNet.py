@@ -2,19 +2,19 @@ import math
 import torch.nn as nn
 import torch as th
 
-
 from asd.models.transformer import VisionTransformer, SSLTransformer
 from asd.models.base import BaseModel
 
 
 class DARLNet(BaseModel):
     def __init__(self, args):
-        super(DARLNet, self).__init__()
+        
+        super(DARLNet, self).__init__(args=args)
         # Difference Layer
         self.difference_layer = DifferenceLayer()
 
         # Backbone layers (Conv1, BatchNorm, ReLU, MaxPool)
-        self.conv1 = nn.Conv1d(in_channels=3, out_channels=64, kernel_size=7, stride=2, padding=0)
+        self.conv1 = nn.Conv1d(in_channels=12, out_channels=64, kernel_size=7, stride=2, padding=0)
         self.bn1 = nn.BatchNorm1d(64)
         self.relu = nn.ReLU()
         self.maxpool = nn.MaxPool1d(kernel_size=2)
@@ -31,14 +31,21 @@ class DARLNet(BaseModel):
         # LSTM cell for Branch 2 (input size = 64, hidden size = 64)
         self.lstm = nn.LSTM(input_size=64, hidden_size=64, batch_first=True)
 
+        # Dropout layers
+        self.dropout = nn.Dropout(p=0.6)  # Dropout probability is 50%
+
         # Fully connected layers after fusion
-        self.fc1 = nn.Linear(512 + 64, 256)  # 512 from GAP, 64 from LSTM
-        self.fc2 = nn.Linear(256, 2)  # num_classes = 2 or 5
+        self.fc1 = nn.Linear(512 + 64, 64)  # 512 from GAP, 64 from LSTM
+        self.fc2 = nn.Linear(64, 2)  # num_classes = 2
+
+    def average_channels(self, data):
+        data = data.squeeze(dim=1)
+        return data.mean(dim=1, keepdim=True)  # Average across channels, keep the dimension
 
     def forward(self, x):
         # Ensure the input is on the correct device
-        x = x.to(self.device)
-
+        x = x.squeeze(dim=1)
+    
         # Backbone: Difference Layer + Conv, BN, ReLU, MaxPool
         x = self.difference_layer(x)
         x = self.conv1(x)
@@ -62,13 +69,18 @@ class DARLNet(BaseModel):
         branch2 = branch2[:, -1, :]  # Use the last hidden state: (B, 64)
 
         # Fusion: Concatenate the outputs of both branches
-        fused = torch.cat((branch1, branch2), dim=1)  # Output: (B, 512 + 64)
+        fused = th.cat((branch1, branch2), dim=1)  # Output: (B, 512 + 64)
+
+        # Apply dropout before fully connected layers
+        fused = self.dropout(fused)
 
         # Fully connected layers
         fused = self.fc1(fused)  # (B, 256)
+        fused = self.dropout(fused)  # Dropout before final layer
         output = self.fc2(fused)  # (B, num_classes)
-
         return output
+    
+        
 
 class DifferenceLayer(nn.Module):
     def __init__(self):
@@ -76,23 +88,22 @@ class DifferenceLayer(nn.Module):
 
     def forward(self, x):
         # Original input
-        original_x = x  # Shape: (B, 1, 256)
+        original_x = x  # Shape: (B, 4, 256)
 
-        # First-order difference
-        first_order_diff = original_x[:, :, 1:] - original_x[:, :, :-1]  # Shape: (B, 1, 255)
+        # First-order difference per channel
+        first_order_diff = original_x[:, :, 1:] - original_x[:, :, :-1]  # Shape: (B, 4, 255)
 
-        # Second-order difference
-        second_order_diff = first_order_diff[:, :, 1:] - first_order_diff[:, :, :-1]  # Shape: (B, 1, 254)
+        # Second-order difference per channel
+        second_order_diff = first_order_diff[:, :, 1:] - first_order_diff[:, :, :-1]  # Shape: (B, 4, 254)
 
         # Pad the differences to match the original input size
-        first_order_diff_padded = nn.functional.pad(first_order_diff, (1, 0))  # Shape: (B, 1, 256)
-        second_order_diff_padded = nn.functional.pad(second_order_diff, (2, 0))  # Shape: (B, 1, 256)
+        first_order_diff_padded = nn.functional.pad(first_order_diff, (1, 0))  # Shape: (B, 4, 256)
+        second_order_diff_padded = nn.functional.pad(second_order_diff, (2, 0))  # Shape: (B, 4, 256)
 
-        # Concatenate original, first-order, and second-order differences
-        combined_output = torch.cat((original_x, first_order_diff_padded, second_order_diff_padded), dim=1)
+        # Concatenate the original signal, first-order, and second-order differences along the channel dimension
+        combined_output = th.cat((original_x, first_order_diff_padded, second_order_diff_padded), dim=1)  # Shape: (B, 12, 256)
 
-        return combined_output  # Shape: (B, 3, 256)
-    
+        return combined_output  # Shape: (B, 12, 256)
     
     
 class ChannelAttention(nn.Module):
