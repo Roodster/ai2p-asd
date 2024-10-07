@@ -11,11 +11,6 @@ from scipy import stats, signal
 from sklearn.preprocessing import normalize
 from sklearn.impute import SimpleImputer
 from concurrent.futures import ThreadPoolExecutor, as_completed
-import os
-from imblearn.over_sampling import BorderlineSMOTE
-import torch
-import matplotlib.pyplot as plt
-
 
 
 class BandpassFilter(BaseEstimator, TransformerMixin):
@@ -721,16 +716,14 @@ class HFBandFeatureExtraction(BaseEstimator, TransformerMixin):
 
     
 class BalanceSeizureSegments(BaseEstimator, TransformerMixin):
-    def __init__(self, random_state=None, ratio=1):
+    def __init__(self, random_state=None):
         """
         Custom sklearn transformer that balances seizure and non-seizure segments
         by randomly sampling non-seizure segments.
 
         Parameters:
         random_state (int, optional): Seed for the random number generator for reproducibility.
-        ratio (int, optional): ratio of non-seizre segments to seizure segments.
         """
-        self.ratio = ratio
         self.random_state = random_state
 
     def fit(self, X, y=None):
@@ -759,7 +752,7 @@ class BalanceSeizureSegments(BaseEstimator, TransformerMixin):
         non_seizure_segments = [segment for segment in X if segment[1] == 0]
         
         # Number of seizure segments
-        num_seizures = len(seizure_segments) * self.ratio
+        num_seizures = len(seizure_segments)
         
         # Randomly sample non-seizure segments to match the number of seizure segments
         sampled_non_seizure = rnd.sample(non_seizure_segments, min(num_seizures, len(non_seizure_segments)))
@@ -860,160 +853,43 @@ def get_svm_features(X: np.ndarray, y: np.ndarray, batch_size: int = 128, max_wo
     
     return X_final, y_final
 
-    
-
-def load_npz_files():
-    root_dir = r".\data\dataset\signals"  # Root directory with the npz files
-    seiz_segments = []
-    non_seiz_segments = []
-    seiz_labels = []
-    non_seiz_labels = []
-    cnt  = 0
-    # Walk through the root directory and subdirectories
-    for subdir, dirs, files in os.walk(root_dir):
-        for file in files:
-            cnt += 1
-            if file.endswith(".npz"):
-                file_path = os.path.join(subdir, file)
-                try:
-                    # Load the npz file
-                    npz_file = np.load(file_path)
-                    segment = torch.from_numpy(npz_file['x'].astype(np.float32))
-                    label = torch.from_numpy(npz_file['y'].astype(np.float32))  # Ensure labels are float for comparison
-                    # if(cnt % 1000 == 0):   
-                    #     plot_channel_scatter(segment, 1, label)
-                    # Append the segment and label to appropriate lists
-                    if label.item() == 1.0:  # Seizure segments
-                        seiz_segments.append(segment)
-                        seiz_labels.append(label)
-                    else:  # Non-seizure segments
-                        non_seiz_segments.append(segment)
-                        non_seiz_labels.append(label)
-                
-                except Exception as e:
-                    print(f"Error loading {file_path}: {e}")
-    # print("count, ", cnt)
-    # Convert lists to tensors
-    torch_seiz = torch.stack(seiz_segments)
-    torch_non_seiz = torch.stack(non_seiz_segments)
-    torch_seiz_labels = torch.stack(seiz_labels)
-    torch_non_seiz_labels = torch.stack(non_seiz_labels)
-    
-    # Shuffle seizure and non-seizure segments along with their labels
-    seiz_indices = torch.randperm(torch_seiz.size(0))
-    non_seiz_indices = torch.randperm(torch_non_seiz.size(0))
-
-    shuffled_seiz = torch_seiz[seiz_indices]
-    shuffled_seiz_labels = torch_seiz_labels[seiz_indices]
-    
-    shuffled_non_seiz = torch_non_seiz[non_seiz_indices]
-    shuffled_non_seiz_labels = torch_non_seiz_labels[non_seiz_indices]
-
-    # Print counts and shapes
-    print("Count of seizures: ", len(seiz_segments))
-    print("Count of non-seizures: ", len(non_seiz_segments))
-    print("Seizures shape: ", shuffled_seiz.shape)
-    print("Non-seizures shape: ", shuffled_non_seiz.shape)
-
-    # Return both shuffled segments and their respective labels
-    return (shuffled_seiz, shuffled_seiz_labels), (shuffled_non_seiz, shuffled_non_seiz_labels)
-
-
-def apply_SMOTE(seizures, seizure_labels, non_seizures, non_seizure_labels):
-    # Step 1: Stack the channels for both seizure and non-seizure segments
-    stacked_seiz = seizures.view(seizures.size(0), -1)
-    stacked_non_seiz = non_seizures.view(non_seizures.size(0), -1)
-
-    # Step 2: Combine the seizure data with non-seizure data
-    combined_data = torch.cat((stacked_seiz, stacked_non_seiz), dim=0)
-    combined_labels = torch.cat((seizure_labels, non_seizure_labels), dim=0)
-
-    # Step 3: Convert to numpy arrays for SMOTE
-    combined_data_np = combined_data.numpy()
-    combined_labels_np = combined_labels.numpy()
-
-    # Step 4: Apply BorderlineSMOTE
-    blsmote = BorderlineSMOTE(sampling_strategy="minority") 
-    X_resampled, y_resampled = blsmote.fit_resample(combined_data_np, combined_labels_np)
-
-    # Step 5: Reshape the resampled data from (N, C * B) back to (N, C, B)
-    # N: number of samples, C: number of channels, B: number of features
-    N = X_resampled.shape[0]
-    C = seizures.size(1)  # Number of channels
-    B = seizures.size(2)  # Number of features (time samples)
-    
-    X_resampled_reshaped = X_resampled.reshape(N, C, B)  # Reshape back to (N, C, B)
-
-    # Convert the reshaped data and labels back to torch tensors
-    X_resampled_torch = torch.from_numpy(X_resampled_reshaped).float()
-    y_resampled_torch = torch.from_numpy(y_resampled).long()
-
-    # Print the shapes for confirmation
-    print(f"Resampled data shape (torch): {X_resampled_torch.shape}")
-    print(f"Resampled labels shape (torch): {y_resampled_torch.shape}")
-    
-    print("old y = ", combined_labels_np)
-    print("new y = ", y_resampled)
-
-    # Return the resampled data and labels as PyTorch tensors
-    return X_resampled_torch, y_resampled_torch
-
-
-def plot_channel_scatter(data, channel_idx, label):
-    
-    # Select the data for the given channel and remove the last singleton dimension
-    channel_data = data[channel_idx, :].cpu().numpy()  # Convert to numpy for plotting
-
-    # Create scatter plot
-    plt.figure(figsize=(10, 6))
-    plt.scatter(range(len(channel_data)), channel_data, c='blue', alpha=0.7)
-    plt.title(f"Scatter Plot for Channel {channel_idx} , label {label}")
-    plt.xlabel("Sample Index")
-    plt.ylabel("Amplitude")
-    plt.grid(True)
-    plt.show()
-
-
-
+    # Example usage
 if __name__ == "__main__":
 
     from tqdm import tqdm
     from common.utils import load_edf_filepaths, clean_path, load_eeg_file, save_spectrograms_and_labels
     
-    files_list = load_edf_filepaths("./data/dataset/train/raw/")
+    """
+    WARNING: Current code computes features for svm.
+    """
     
+    dataset_path = "./data/dataset/train/raw/"
+    dataset_save_root_path = "./data/dataset/train/features-balanced/"
+    
+    files_list = load_edf_filepaths(dataset_path)
     
     pbar = tqdm(files_list)
     for file in pbar: 
         # pbar.set_description(f"current file {file}")
 
+        # channels="FZ-CZ;CZ-PZ;F8-T8;P4-O2;FP2-F8;F4-C4;C4-P4;P3-O1;FP2-F4;F3-C3;C3-P3;P7-O1;FP1-F3;F7-T7;T7-P7;FP1-F7"
         eeg_file = load_eeg_file(file)
 
         if eeg_file == None:
+            print('its none')
             continue
         
         eeg_data = eeg_file.data
         labels = eeg_file.get_labels()
         
-        
-        pipeline = Pipeline([('filters', BandpassFilter(sfreq=256,lowcut=1, highcut=40, order=6)),
-                             ('normalizes',ZScoreNormalization()),
-                             ('segments', SegmentSignals(fs=256, segment_length=4, overlap=0.5)),
-                             ('samples', BalanceSeizureSegments(random_state=42, ratio=5))
-                             ]) 
-        
-        X, y = pipeline.transform(X=(eeg_data, labels))
-        save_dir, filename = clean_path(file, "./data/dataset/train/raw")
-        save_dir = "./data/dataset/signals" + save_dir
+        pipeline = Pipeline([
+            ('bandpass', BandpassFilter(sfreq=256, lowcut=1, highcut=40, order=6)),
+            ('segment', SegmentSignals(fs=256, segment_length=1, ))
+            ])
+        save_dir, filename = clean_path(file, dataset_path)
+        save_dir = dataset_save_root_path + save_dir
         filename = filename.split('.')[0]        
-        pbar.set_description(f"saved {filename} of size: {X.shape} to {save_dir}")            
+        pbar.set_description(f"saved {filename} of size: {X.shape} to {save_dir}")
+            
         save_spectrograms_and_labels(X, y, save_dir=save_dir, filename=filename)
-        
-    print("Starting SMOTE process")
-    (seizures, seizure_labels), (non_seizures, non_seizure_labels) = load_npz_files()
-    X, Y = apply_SMOTE(seizures, seizure_labels, non_seizures, non_seizure_labels)
     
-    save_dir = "./data/dataset/signals-SMOTE"
-    save_spectrograms_and_labels(X, Y, save_dir=save_dir, filename="SMOTE")
-    # print("X after SMOTE has type ", type(X), " Shape ", X.shape)
-    # print("Y after SMOTE has type ", type(Y), " Shape ", Y.shape)
