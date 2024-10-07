@@ -16,7 +16,7 @@ from imblearn.over_sampling import BorderlineSMOTE
 import torch
 import matplotlib.pyplot as plt
 from tqdm import tqdm
-from common.utils import load_edf_filepaths, clean_path, load_eeg_file, save_spectrograms_and_labels, save_signals_and_labels
+from common.utils import load_edf_filepaths, clean_path, load_eeg_file, save_spectrograms_and_labels
 
 
 class BandpassFilter(BaseEstimator, TransformerMixin):
@@ -221,9 +221,8 @@ class DropSegments(BaseEstimator, TransformerMixin):
         print(f"Dropped {self.drop_percentage * 100}% of the segments. Retained {num_retain} out of {len(X)}.")
         
         return X_reduced, y_reduced
-       
         
-         
+        
 class ZScoreNormalization(BaseEstimator, TransformerMixin):
     def __init__(self):
         """
@@ -775,8 +774,6 @@ class HFBandFeatureExtraction(BaseEstimator, TransformerMixin):
         normalized_power = total_power / np.sum(total_power)
         
         return normalized_power
-    
-    
 
     
 class BalanceSeizureSegments(BaseEstimator, TransformerMixin):
@@ -921,7 +918,8 @@ def get_svm_features(X: np.ndarray, y: np.ndarray, batch_size: int = 128, max_wo
 
     
 
-def load_npz_files(root_dir):
+def load_npz_files():
+    root_dir = r".\data\dataset\signals"  # Root directory with the npz files
     seiz_segments = []
     non_seiz_segments = []
     seiz_labels = []
@@ -967,11 +965,11 @@ def load_npz_files(root_dir):
     shuffled_non_seiz = torch_non_seiz[non_seiz_indices]
     shuffled_non_seiz_labels = torch_non_seiz_labels[non_seiz_indices]
 
-    # # Print counts and shapes
-    # print("Count of seizures: ", len(seiz_segments))
-    # print("Count of non-seizures: ", len(non_seiz_segments))
-    # print("Seizures shape: ", shuffled_seiz.shape)
-    # print("Non-seizures shape: ", shuffled_non_seiz.shape)
+    # Print counts and shapes
+    print("Count of seizures: ", len(seiz_segments))
+    print("Count of non-seizures: ", len(non_seiz_segments))
+    print("Seizures shape: ", shuffled_seiz.shape)
+    print("Non-seizures shape: ", shuffled_non_seiz.shape)
 
     # Return both shuffled segments and their respective labels
     return (shuffled_seiz, shuffled_seiz_labels), (shuffled_non_seiz, shuffled_non_seiz_labels)
@@ -1010,11 +1008,11 @@ def apply_SMOTE(seizures, seizure_labels, non_seizures, non_seizure_labels):
     print(f"Resampled data shape (torch): {X_resampled_torch.shape}")
     print(f"Resampled labels shape (torch): {y_resampled_torch.shape}")
     
+    print("old y = ", combined_labels_np)
+    print("new y = ", y_resampled)
+
     # Return the resampled data and labels as PyTorch tensors
     return X_resampled_torch, y_resampled_torch
-
-
-        
 
 
 def plot_channel_scatter(data, channel_idx, label):
@@ -1064,8 +1062,8 @@ def process_patient_folder(patient_folder, save_root):
     combined_eeg_data = np.concatenate(all_eeg_data, axis=1)  # Combine along time axis
     combined_labels = np.concatenate(all_labels, axis=0)
 
-    # print(f"Combined EEG data shape for {os.path.basename(patient_folder)}: {combined_eeg_data.shape}")
-    # print(f"Combined labels shape for {os.path.basename(patient_folder)}: {combined_labels.shape}")
+    print(f"Combined EEG data shape for {os.path.basename(patient_folder)}: {combined_eeg_data.shape}")
+    print(f"Combined labels shape for {os.path.basename(patient_folder)}: {combined_labels.shape}")
 
     # Apply the pipeline on the combined data
     pipeline = Pipeline([('filters', BandpassFilter(sfreq=256, lowcut=1, highcut=40, order=6)),
@@ -1083,8 +1081,8 @@ def process_patient_folder(patient_folder, save_root):
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
-    save_file =  os.path.basename(os.path.normpath(patient_folder))
-    save_signals_and_labels(X, y, save_dir=save_dir, filename=save_file)
+    save_file = os.path.join(save_dir, f"{os.path.basename(patient_folder)}_transformed.npz")
+    save_spectrograms_and_labels(X, y, save_dir=save_dir, filename=save_file)
     
     print(f"Saved data for {os.path.basename(patient_folder)} with shape {X.shape}.")
 
@@ -1103,17 +1101,82 @@ def process_all_patients(dataset_path, save_root_path):
             process_patient_folder(full_patient_path, save_root_path)
 
 
+def randomly_delete_files(directory, percentage=0.8):
+    # List all files in the directory
+    all_files = [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))]
+    
+    # Calculate how many files to delete
+    num_files_to_delete = int(len(all_files) * percentage)
+    
+    # Randomly select 80% of the files
+    files_to_delete = random.sample(all_files, num_files_to_delete)
+    
+    # Delete the selected files
+    for file_name in files_to_delete:
+        file_path = os.path.join(directory, file_name)
+        try:
+            os.remove(file_path)
+            print(f"Deleted: {file_path}")
+        except Exception as e:
+            print(f"Error deleting {file_path}: {e}")
+
+
+
+# def split_and_save_npz_in_subdirs(root_dir):
+#     # Walk through the root directory and all subdirectories
+#     for subdir, dirs, files in os.walk(root_dir):
+#         for file in files:
+#             if file.endswith(".npz"):
+#                 file_path = os.path.join(subdir, file)
+#                 print(f"Processing file: {file_path}")
+                
+#                 try:
+#                     # Load the npz file
+#                     npz_file = np.load(file_path)
+                    
+#                     # Check the available keys
+#                     print("Keys in npz file: ", npz_file.files)
+                    
+#                     # Get the spectrograms and labels using the correct keys
+#                     spectrograms = npz_file['spectrograms']  # Assuming 'spectrograms' is the correct key
+#                     labels = npz_file['labels']  # Assuming 'labels' is the correct key
+                    
+#                     # Iterate over the first dimension (X) and save each sample as a separate .npz file
+#                     for i in range(spectrograms.shape[0]):  # Loop over X
+#                         spectrogram = spectrograms[i, :, :]  # Shape: (C, Y)
+#                         label = labels[i]  # Scalar value
+                        
+#                         # Create the dictionary to save with the required keys
+#                         data_to_save = {
+#                             'x': spectrogram,  # Shape: (C, Y)
+#                             'y': label  # Scalar value
+#                         }
+                        
+#                         # Create file path for this sample in the same directory
+#                         output_file = os.path.join(subdir, f'sample_{i}.npz')
+                        
+#                         # Save to .npz file
+#                         np.savez(output_file, **data_to_save)
+#                         print(f"Saved {output_file}")
+                
+#                 except Exception as e:
+#                     print(f"Error processing {file_path}: {e}")
+
+
+
+
+
+
+
 if __name__ == "__main__":
     dataset_path = "./data/dataset/train/raw/chb01"
     save_root_path = "./data/dataset/test_dataset_chb01_20%/"
 
-    # If you want to process all directories
-    process_all_patients(dataset_path, save_root_path)
     # Process all patients
     process_patient_folder(dataset_path, save_root_path)
         
     # print("Starting SMOTE process")
-    # (seizures, seizure_labels), (non_seizures, non_seizure_labels) = load_npz_files(".\data\dataset\signals")
+    # (seizures, seizure_labels), (non_seizures, non_seizure_labels) = load_npz_files()
     # X, Y = apply_SMOTE(seizures, seizure_labels, non_seizures, non_seizure_labels)
     
     # save_dir = "./data/dataset/signals-SMOTE"
@@ -1121,5 +1184,7 @@ if __name__ == "__main__":
     # print("X after SMOTE has type ", type(X), " Shape ", X.shape)
     # print("Y after SMOTE has type ", type(Y), " Shape ", Y.shape)
     
-]
+    # Example usage
+    # root_dir = './data/dataset/signals-per-patient/'  # Root directory with the subdirectories containing npz files
+    # split_and_save_npz_in_subdirs(root_dir)
 
