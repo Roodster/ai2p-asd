@@ -17,6 +17,8 @@ import numpy as np
 from scipy import signal
 import matplotlib.pyplot as plt
 import seizure_data_processing as sdp
+import torch
+from imblearn.over_sampling import BorderlineSMOTE
 
 
 def apply_bandpass_filter(eeg_data, lowcut, highcut, fs, order=5):
@@ -48,19 +50,20 @@ def apply_bandpass_filter(eeg_data, lowcut, highcut, fs, order=5):
     
     return filtered_data
 
+    
+def plot_channel_scatter(data, channel_idx, label):
+    
+    # Select the data for the given channel and remove the last singleton dimension
+    channel_data = data[channel_idx, :].cpu().numpy()  # Convert to numpy for plotting
 
-
-def plot_scatter_plot(eeg_data, channel):
-    subsample_size = 5000  # Select a smaller subset, e.g., 5000 points
-    samples = np.arange(eeg_data.shape[1]) 
-    indices = np.random.choice(len(samples), subsample_size, replace=False)
-
-    plt.scatter(samples[indices], eeg_data[channel][indices], s=2)
-    plt.title(f'Subsampled Scatter Plot (Channel {channel})')
-    plt.xlabel('Sample Index')
-    plt.ylabel('Amplitude (µV)')
+    # Create scatter plot
+    plt.figure(figsize=(10, 6))
+    plt.scatter(range(len(channel_data)), channel_data, c='blue', alpha=0.7)
+    plt.title(f"Scatter Plot for Channel {channel_idx}, label, {label}")
+    plt.xlabel("Sample Index")
+    plt.ylabel("Amplitude")
+    plt.grid(True)
     plt.show()
-
 
 def normalize_eeg_data(eeg_data):
     """
@@ -194,40 +197,172 @@ def load_spectrograms_and_labels(load_dir):
     return data# Example usage
 
 
+
+def load_npz_files():
+    root_dir = r".\output_spectrograms"  # Root directory with the npz files
+    seiz_segments = []
+    non_seiz_segments = []
+    seiz_labels = []
+    non_seiz_labels = []
+    cnt  = 0
+    # Walk through the root directory and subdirectories
+    for subdir, dirs, files in os.walk(root_dir):
+        for file in files:
+            cnt += 1
+            if file.endswith(".npz"):
+                file_path = os.path.join(subdir, file)
+                try:
+                    # Load the npz file
+                    npz_file = np.load(file_path)
+                    segment = torch.from_numpy(npz_file['x'].astype(np.float32))
+                    label = torch.from_numpy(npz_file['y'].astype(np.float32))  # Ensure labels are float for comparison
+                    print(segment.shape)
+                    plot_channel_scatter(segment, 0, label)
+                    # Append the segment and label to appropriate lists
+                    if label.item() == 1.0:  # Seizure segments
+                        seiz_segments.append(segment)
+                        seiz_labels.append(label)
+                    else:  # Non-seizure segments
+                        non_seiz_segments.append(segment)
+                        non_seiz_labels.append(label)
+                
+                except Exception as e:
+                    print(f"Error loading {file_path}: {e}")
+    print("count, ", cnt)
+    # Convert lists to tensors
+    torch_seiz = torch.stack(seiz_segments)
+    torch_non_seiz = torch.stack(non_seiz_segments)
+    torch_seiz_labels = torch.stack(seiz_labels)
+    torch_non_seiz_labels = torch.stack(non_seiz_labels)
+    
+    # Shuffle seizure and non-seizure segments along with their labels
+    seiz_indices = torch.randperm(torch_seiz.size(0))
+    non_seiz_indices = torch.randperm(torch_non_seiz.size(0))
+
+    shuffled_seiz = torch_seiz[seiz_indices]
+    shuffled_seiz_labels = torch_seiz_labels[seiz_indices]
+    
+    shuffled_non_seiz = torch_non_seiz[non_seiz_indices]
+    shuffled_non_seiz_labels = torch_non_seiz_labels[non_seiz_indices]
+
+    # Print counts and shapes
+    print("Count of seizures: ", len(seiz_segments))
+    print("Count of non-seizures: ", len(non_seiz_segments))
+    print("Seizures shape: ", shuffled_seiz.shape)
+    print("Non-seizures shape: ", shuffled_non_seiz.shape)
+
+    # Return both shuffled segments and their respective labels
+    return (shuffled_seiz, shuffled_seiz_labels), (shuffled_non_seiz, shuffled_non_seiz_labels)
+
+
+
+def apply_SMOTE(shuffled_seiz, shuffled_seiz_labels, shuffled_non_seiz, shuffled_non_seiz_labels):
+    # Step 1: Stack the channels for both seizure and non-seizure segments
+    stacked_seiz = shuffled_seiz.view(shloaduffled_seiz.size(0), -1)
+    stacked_non_seiz = shuffled_non_seiz.view(shuffled_non_seiz.size(0), -1)
+
+    # Step 2: Remove half of the seizure segments and their labels
+    seiz_half_idx = shuffled_seiz.size(0) // 2  # Find half of the seizure samples
+    reduced_seiz = stacked_seiz[seiz_half_idx:]  # Keep only the second half of the seizure segments
+    reduced_seiz_labels = shuffled_seiz_labels[seiz_half_idx:]  # Keep only the second half of the seizure labels
+
+    # Step 3: Combine the reduced seizure data with non-seizure data
+    combined_data = torch.cat((reduced_seiz, stacked_non_seiz), dim=0)
+    combined_labels = torch.cat((reduced_seiz_labels, shuffled_non_seiz_labels), dim=0)
+
+    # Step 4: Convert to numpy arrays for SMOTE
+    combined_data_np = combined_data.numpy()
+    combined_labels_np = combined_labels.numpy()
+
+    # Step 5: Apply BorderlineSMOTE
+    blsmote = BorderlineSMOTE(sampling_strategy="minority") 
+    X_resampled, y_resampled = blsmote.fit_resample(combined_data_np, combined_labels_np)
+
+    # Step 6: Reshape the resampled data from (N, C * B) back to (N, C, B)
+    # N: number of samples, C: number of channels, B: number of features
+    N = X_resampled.shape[0]
+    C = shuffled_seiz.size(1)  # Number of channels
+    B = shuffled_seiz.size(2)  # Number of features (time samples)
+    
+    X_resampled_reshaped = X_resampled.reshape(N, C, B)  # Reshape back to (N, C, B)
+
+    # Convert the reshaped data and labels back to torch tensors
+    X_resampled_torch = torch.from_numpy(X_resampled_reshaped).float()
+    y_resampled_torch = torch.from_numpy(y_resampled).long()
+
+    # Print the shapes for confirmation
+    print(f"Resampled data shape (torch): {X_resampled_torch.shape}")
+    print(f"Resampled labels shape (torch): {y_resampled_torch.shape}")
+    
+    print("old y = ", combined_labels_np)
+    print("new y = ", y_resampled)
+
+    # Return the resampled data and labels as PyTorch tensors
+    return X_resampled_torch, y_resampled_torch
+
+
+# Visualize a spectrogram for one channel of the first segment
+def plot_spectrogram(X, label):
+    print("Forma beledir! ", X.shape)
+    plt.figure(figsize=(10, 4))
+    plt.specgram(X[0][0], Fs=256, cmap="rainbow")
+    plt.colorbar(label='Log Power')
+    plt.title(f'Spectrogram of Channel 0, Segment 0 (Label: {label})')
+    plt.xlabel('Time')
+    plt.ylabel('Frequency')
+    plt.show()
+
+
 if __name__ == "__main__":
     # Assume you have loaded your EEG data and labels
     # eeg_data shape: (n_channels, n_samples)
     # labels shape: (n_samples,)
     
-    # Example data (replace with your actual data)
-    eeg_file = load_eeg_file()
-    # eeg_data = np.random.randn(n_channels, n_samples)
-    # labels = np.random.randint(0, 2, n_samples)
-    
-    eeg_data = eeg_file.data
-    labels = eeg_file.get_labels()
-    
-    
-    fs = 256  # Sampling frequency in Hz
+    (shuffled_seiz, shuffled_seiz_labels), (shuffled_non_seiz, shuffled_non_seiz_labels) = load_npz_files()
+    X, Y = apply_SMOTE(shuffled_seiz, shuffled_seiz_labels, shuffled_non_seiz, shuffled_non_seiz_labels)
 
-    denoised_data = remove_noise(eeg_data, fs, labels)
-    # Segment and convert to spectrograms
-    spectrograms, segment_labels = segment_and_spectrogram(denoised_data, labels, fs)
+    print(torch.sum(Y[0:10951]))
+    print(torch.sum(Y[10952:32856]))
+    print(torch.sum(Y[32857:43807]))
+
+    plot_channel_scatter(X[1222], 0)
+    plot_channel_scatter(X[122], 1)
+    plot_channel_scatter(X[2], 2)
+
+    plot_channel_scatter(X[43605], 0)
+    plot_channel_scatter(X[43704], 0)
+    plot_channel_scatter(X[43507], 0)
+    plot_channel_scatter(X[43403], 0)
+    plot_channel_scatter(X[43201], 0)
+    plot_channel_scatter(X[41802], 0)
+
+    plot_channel_scatter(X[41802], 3)
+    plot_channel_scatter(X[41802], 2)
+    plot_channel_scatter(X[41802], 1)
+    plot_channel_scatter(X[41802], 3)
+    plot_channel_scatter(X[41802], 2)
+
     
-    print(f"Number of segments: {len(spectrograms)}")
-    print(f"Spectrogram shape: {spectrograms[0].shape}")
-    print(f"Segment labels shape: {segment_labels.shape}")
+    # # Example data (replace with your actual data)
+    # eeg_file = load_eeg_file()
+    # # eeg_data = np.random.randn(n_channels, n_samples)
+    # # labels = np.random.randint(0, 2, n_samples)
+    
+    # eeg_data = eeg_file.data
+    # labels = eeg_file.get_labels()
+    
+    
+    # fs = 256  # Sampling frequency in Hz
+
+    # denoised_data = remove_noise(eeg_data, fs, labels)
+    # # Segment and convert to spectrograms
+    # spectrograms, segment_labels = segment_and_spectrogram(denoised_data, labels, fs)
+    
+    # print(f"Number of segments: {len(spectrograms)}")
+    # print(f"Spectrogram shape: {spectrograms[0].shape}")
+    # print(f"Segment labels shape: {segment_labels.shape}")
     
 
-# Visualize a spectrogram for one channel of the first segment
-def plot_spectrogram(X):
-    plt.figure(figsize=(10, 4))
-    plt.specgram(X[0][0], Fs=256, cmap="rainbow")
-    plt.colorbar(label='Log Power')
-    plt.title(f'Spectrogram of Channel 0, Segment 0 (Label: {segment_labels[0]})')
-    plt.xlabel('Time')
-    plt.ylabel('Frequency')
-    plt.show()
 
 
 # plt.specgram(spectrograms[0][0], Fs=6, cmap="rainbow")
@@ -236,17 +371,21 @@ def plot_spectrogram(X):
 # plt.show()
 
 
-save_spectrograms_and_labels(spectrograms, segment_labels, save_dir="./data/temp/")
+# def apply_SMOTE(segments):
+    
+# save_spectrograms_and_labels(spectrograms, segment_labels, save_dir="./data/temp/")
 
 
-data = load_spectrograms_and_labels("./data/temp/")
-X = data['x']
-y = data['y']
-print(X.shape)
-print(y.shape)
+# data = load_spectrograms_and_labels("./data/temp/")
+# X = data['x']
+# y = data['y']
+# print(X.shape)
+# print(y.shape)
+
+# print("Y budur qardash ", y)
 
 
-plot_spectrogram(X)
+
 
 # +
 print(type(X))
