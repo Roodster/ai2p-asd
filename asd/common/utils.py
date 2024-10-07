@@ -100,6 +100,33 @@ def save_spectrograms_and_labels(spectrograms, labels, save_dir, filename):
         save_file = f"{a}_{index}.npz"
          
         np.savez(os.path.join(save_dir, save_file.replace('+', '')), x=spectrogram, y=label, allow_pickle=True)
+        
+        
+def save_signals_and_labels(X, y, save_dir, filename):
+    """
+    Save signals and labels to .npz files.
+    
+    :param X: numpy array of signals with shape (N, C, F)
+    :param y: numpy array of labels with shape (F)
+    :param save_dir: directory to save the files
+    :param filename: base name for the saved files
+    """
+    # Create the save directory if it doesn't exist
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+
+    # Iterate over each signal (N dimension) and save with corresponding labels
+    for index in range(X.shape[0]):
+        signal = X[index]  # Shape (C, F)
+        
+        # Construct the file name with the index
+        save_file = f"{filename.split('.')[0]}_{index}.npz"
+        
+        # Save the signal and labels using the keys 'x' and 'y'
+        np.savez(os.path.join(save_dir, save_file), x=signal, y=y, allow_pickle=True)
+        
+    print(f"Saved {X.shape[0]} files in {save_dir}")
+
 
 
 def set_seed(seed):
