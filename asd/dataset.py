@@ -35,9 +35,6 @@ class RawDataset(Dataset):
         labels = torch.tensor(eeg_file.get_labels())
         return data, labels
     
-    
-
-
 class OnlineSegmentsDataset(Dataset):
     def __init__(self, root_dir, mode='full', patient_id=None):
         """

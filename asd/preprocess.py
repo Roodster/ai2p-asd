@@ -15,8 +15,7 @@ import os
 from imblearn.over_sampling import BorderlineSMOTE
 import torch
 import matplotlib.pyplot as plt
-from tqdm import tqdm
-from common.utils import load_edf_filepaths, clean_path, load_eeg_file, save_spectrograms_and_labels
+
 
 
 class BandpassFilter(BaseEstimator, TransformerMixin):
@@ -49,7 +48,7 @@ class BandpassFilter(BaseEstimator, TransformerMixin):
         Returns:
         numpy.ndarray: Filtered EEG data.
         """
-        print("Starting bandpass filtering")
+        
         X, y = (X)
         nyq = 0.5 * self.sfreq
         low = (self.lowcut / nyq) + 1e-6
@@ -89,7 +88,6 @@ class SegmentSignals(BaseEstimator, TransformerMixin):
         Returns:
         tuple: (segmented_data, segment_labels)
         """
-        print("Starting segmenting")
         eeg_data, labels = X
         n_channels, n_samples = eeg_data.shape
         samples_per_segment = int(self.segment_length * self.fs)
@@ -168,61 +166,8 @@ class Spectrograms(BaseEstimator, TransformerMixin):
         spectrograms = self._process_channel(channel_data=segmented_data)
         return (np.array(spectrograms), y)
     
-
-
-class DropSegments(BaseEstimator, TransformerMixin):
-    def __init__(self, drop_percentage=0.8):
-        """
-        Custom sklearn transformer that randomly drops a percentage of data.
-        
-        Parameters:
-        drop_percentage (float): The percentage of data to drop (0 < drop_percentage < 1).
-        """
-        self.drop_percentage = drop_percentage
-
-    def fit(self, X, y=None):
-        # No fitting necessary for this transformer, so just return self
-        return self
     
-    def transform(self, X):
-        """
-        Randomly drop a percentage of the data.
-
-        Parameters:
-        X (tuple): Tuple containing:
-            - X (numpy.ndarray): Data array with shape (N, C, F).
-            - y (numpy.ndarray): Labels array with shape (N,).
-
-        Returns:
-        tuple: Tuple containing:
-            - X (numpy.ndarray): Reduced data array.
-            - y (numpy.ndarray): Corresponding reduced labels.
-        """
-        print("Starting normalization and dropping segments.")
-        
-        X, y = X
-        # Ensure data is of type float32 for precision
-        X = X.astype(np.float32)
-        
-        # Calculate the number of segments to retain
-        retain_percentage = 1 - self.drop_percentage
-        num_retain = int(len(X) * retain_percentage)
-        
-        # Randomly select indices to retain
-        retain_indices = np.random.choice(len(X), num_retain, replace=False)
-        
-        # Sort the indices to maintain order (optional)
-        retain_indices = np.sort(retain_indices)
-        
-        # Select the retained samples
-        X_reduced = X[retain_indices]
-        y_reduced = y[retain_indices]
-        
-        print(f"Dropped {self.drop_percentage * 100}% of the segments. Retained {num_retain} out of {len(X)}.")
-        
-        return X_reduced, y_reduced
-        
-        
+    
 class ZScoreNormalization(BaseEstimator, TransformerMixin):
     def __init__(self):
         """
@@ -244,9 +189,8 @@ class ZScoreNormalization(BaseEstimator, TransformerMixin):
         Returns:
         numpy.ndarray: Normalized data.
         """
-        print("Starting normalizing")
         
-        X, y = X
+        X,y = X
         # Ensure data is of type float32 for precision
         X = X.astype(np.float32)
         
@@ -803,7 +747,7 @@ class BalanceSeizureSegments(BaseEstimator, TransformerMixin):
         Returns:
         list: Balanced list of segments with equal number of seizure and non-seizure segments.
         """
-        print("Starting balancing")
+        
         # Set the random seed if specified
         if self.random_state is not None:
             rnd.seed(self.random_state)
@@ -1031,160 +975,45 @@ def plot_channel_scatter(data, channel_idx, label):
 
 
 
-def process_patient_folder(patient_folder, save_root):
-    """
-    Process all .edf files in a patient's folder, concatenate the data, and apply the pipeline.
-    :param patient_folder: Path to the patient's folder (e.g., ./data/dataset/train/raw/chb01)
-    :param save_root: Root directory where processed files will be saved.
-    """
-    # Initialize empty lists to accumulate data
-    all_eeg_data = []
-    all_labels = []
+if __name__ == "__main__":
 
-    # Load all .edf file paths for the current patient
-    files_list = load_edf_filepaths(patient_folder)
+    from tqdm import tqdm
+    from common.utils import load_edf_filepaths, clean_path, load_eeg_file, save_spectrograms_and_labels
     
-    pbar = tqdm(files_list, desc=f"Processing {os.path.basename(patient_folder)}")
-    for file in pbar:
-        eeg_file = load_eeg_file(file)
-        if eeg_file is None:
-            continue
+    files_list = load_edf_filepaths("./data/dataset/train/raw/")
+    
+    
+    pbar = tqdm(files_list)
+    for file in pbar: 
+        # pbar.set_description(f"current file {file}")
 
+        eeg_file = load_eeg_file(file)
+
+        if eeg_file == None:
+            continue
+        
         eeg_data = eeg_file.data
         labels = eeg_file.get_labels()
-
-        print(f"Loaded file {file}: EEG data shape: {eeg_data.shape}, Labels shape: {labels.shape}")
-
-        all_eeg_data.append(eeg_data)
-        all_labels.append(labels)
-
-    # Concatenate all EEG data and labels along the time axis
-    combined_eeg_data = np.concatenate(all_eeg_data, axis=1)  # Combine along time axis
-    combined_labels = np.concatenate(all_labels, axis=0)
-
-    print(f"Combined EEG data shape for {os.path.basename(patient_folder)}: {combined_eeg_data.shape}")
-    print(f"Combined labels shape for {os.path.basename(patient_folder)}: {combined_labels.shape}")
-
-    # Apply the pipeline on the combined data
-    pipeline = Pipeline([('filters', BandpassFilter(sfreq=256, lowcut=1, highcut=40, order=6)),
-                         ('normalizes', ZScoreNormalization()),
-                         ('segments', SegmentSignals(fs=256, segment_length=4, overlap=0)),
-                         ('delete', DropSegments(drop_percentage=0.8))]) 
-    
-    X, y = pipeline.transform(X=(combined_eeg_data, combined_labels))
-
-    print(f"Transformed data shape for {os.path.basename(patient_folder)}: {X.shape}")
-    print(f"Transformed labels shape for {os.path.basename(patient_folder)}: {y.shape}")
-
-    # Save the processed data
-    save_dir = os.path.join(save_root, os.path.basename(patient_folder))
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
-
-    save_file = os.path.join(save_dir, f"{os.path.basename(patient_folder)}_transformed.npz")
-    save_spectrograms_and_labels(X, y, save_dir=save_dir, filename=save_file)
-    
-    print(f"Saved data for {os.path.basename(patient_folder)} with shape {X.shape}.")
-
-
-
-def process_all_patients(dataset_path, save_root_path):
-    """
-    Process all patient folders in the dataset.
-    :param dataset_path: Path to the root folder containing patient folders (e.g., ./data/dataset/train/raw/)
-    :param save_root_path: Path where processed data will be saved (e.g., ./data/dataset/signals-per-patient/)
-    """
-    # Loop through all folders in the dataset path (assuming each folder is a patient)
-    for patient_folder in os.listdir(dataset_path):
-        full_patient_path = os.path.join(dataset_path, patient_folder)
-        if os.path.isdir(full_patient_path):  # Only process directories (patient folders)
-            process_patient_folder(full_patient_path, save_root_path)
-
-
-def randomly_delete_files(directory, percentage=0.8):
-    # List all files in the directory
-    all_files = [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))]
-    
-    # Calculate how many files to delete
-    num_files_to_delete = int(len(all_files) * percentage)
-    
-    # Randomly select 80% of the files
-    files_to_delete = random.sample(all_files, num_files_to_delete)
-    
-    # Delete the selected files
-    for file_name in files_to_delete:
-        file_path = os.path.join(directory, file_name)
-        try:
-            os.remove(file_path)
-            print(f"Deleted: {file_path}")
-        except Exception as e:
-            print(f"Error deleting {file_path}: {e}")
-
-
-
-# def split_and_save_npz_in_subdirs(root_dir):
-#     # Walk through the root directory and all subdirectories
-#     for subdir, dirs, files in os.walk(root_dir):
-#         for file in files:
-#             if file.endswith(".npz"):
-#                 file_path = os.path.join(subdir, file)
-#                 print(f"Processing file: {file_path}")
-                
-#                 try:
-#                     # Load the npz file
-#                     npz_file = np.load(file_path)
-                    
-#                     # Check the available keys
-#                     print("Keys in npz file: ", npz_file.files)
-                    
-#                     # Get the spectrograms and labels using the correct keys
-#                     spectrograms = npz_file['spectrograms']  # Assuming 'spectrograms' is the correct key
-#                     labels = npz_file['labels']  # Assuming 'labels' is the correct key
-                    
-#                     # Iterate over the first dimension (X) and save each sample as a separate .npz file
-#                     for i in range(spectrograms.shape[0]):  # Loop over X
-#                         spectrogram = spectrograms[i, :, :]  # Shape: (C, Y)
-#                         label = labels[i]  # Scalar value
-                        
-#                         # Create the dictionary to save with the required keys
-#                         data_to_save = {
-#                             'x': spectrogram,  # Shape: (C, Y)
-#                             'y': label  # Scalar value
-#                         }
-                        
-#                         # Create file path for this sample in the same directory
-#                         output_file = os.path.join(subdir, f'sample_{i}.npz')
-                        
-#                         # Save to .npz file
-#                         np.savez(output_file, **data_to_save)
-#                         print(f"Saved {output_file}")
-                
-#                 except Exception as e:
-#                     print(f"Error processing {file_path}: {e}")
-
-
-
-
-
-
-
-if __name__ == "__main__":
-    dataset_path = "./data/dataset/train/raw/chb01"
-    save_root_path = "./data/dataset/test_dataset_chb01_20%/"
-
-    # Process all patients
-    process_patient_folder(dataset_path, save_root_path)
         
-    # print("Starting SMOTE process")
-    # (seizures, seizure_labels), (non_seizures, non_seizure_labels) = load_npz_files()
-    # X, Y = apply_SMOTE(seizures, seizure_labels, non_seizures, non_seizure_labels)
+        
+        pipeline = Pipeline([('filters', BandpassFilter(sfreq=256,lowcut=1, highcut=40, order=6)),
+                             ('normalizes',ZScoreNormalization()),
+                             ('segments', SegmentSignals(fs=256, segment_length=4, overlap=0.5)),
+                             ('samples', BalanceSeizureSegments(random_state=42, ratio=5))
+                             ]) 
+        
+        X, y = pipeline.transform(X=(eeg_data, labels))
+        save_dir, filename = clean_path(file, "./data/dataset/train/raw")
+        save_dir = "./data/dataset/signals" + save_dir
+        filename = filename.split('.')[0]        
+        pbar.set_description(f"saved {filename} of size: {X.shape} to {save_dir}")            
+        save_spectrograms_and_labels(X, y, save_dir=save_dir, filename=filename)
+        
+    print("Starting SMOTE process")
+    (seizures, seizure_labels), (non_seizures, non_seizure_labels) = load_npz_files()
+    X, Y = apply_SMOTE(seizures, seizure_labels, non_seizures, non_seizure_labels)
     
-    # save_dir = "./data/dataset/signals-SMOTE"
-    # save_spectrograms_and_labels(X, Y, save_dir=save_dir, filename="SMOTE")
+    save_dir = "./data/dataset/signals-SMOTE"
+    save_spectrograms_and_labels(X, Y, save_dir=save_dir, filename="SMOTE")
     # print("X after SMOTE has type ", type(X), " Shape ", X.shape)
     # print("Y after SMOTE has type ", type(Y), " Shape ", Y.shape)
-    
-    # Example usage
-    # root_dir = './data/dataset/signals-per-patient/'  # Root directory with the subdirectories containing npz files
-    # split_and_save_npz_in_subdirs(root_dir)
-

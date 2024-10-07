@@ -48,7 +48,7 @@ def load_spectrograms_and_labels(load_dir, filename):
     return data
 
 
-def load_seizure_edf_filepaths(root_path):
+def load_edf_filepaths(root_path):
     edf_files = []
     
     # Walk through all directories and subdirectories
@@ -59,19 +59,8 @@ def load_seizure_edf_filepaths(root_path):
             seizure_file = filename + '.seizures'
             if os.path.exists(seizure_file):
                 edf_files.append(r'{}'.format(filename))
-    return edf_files
-
-
-def load_edf_filepaths(root_path):
-    edf_files = []
     
-    # Walk through all directories and subdirectories
-    for dirpath, dirnames, filenames in os.walk(root_path):
-        # Find all .edf files in the current directory
-        for filename in glob.glob(os.path.join(dirpath, '*.edf')):
-            edf_files.append(r'{}'.format(filename))
     return edf_files
-
 
 def load_eeg_file(file, channels="F7-T7;T7-P7;F8-T8;T8-P8"):
     # Load a single file
