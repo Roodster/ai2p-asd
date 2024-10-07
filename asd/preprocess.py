@@ -219,10 +219,51 @@ class DropSegments(BaseEstimator, TransformerMixin):
         y_reduced = y[retain_indices]
         
         print(f"Dropped {self.drop_percentage * 100}% of the segments. Retained {num_retain} out of {len(X)}.")
-        
+        print(f"Number of seizure samples: ", y_reduced.sum())
+
         return X_reduced, y_reduced
        
+
+class ApplySMOTE(BaseEstimator, TransformerMixin):
+    def __init__(self):
+        """
+        Custom sklearn transformer that applies z-score normalization to data.
+        """
+        pass
+
+    def fit(self, X, y=None):
+        # No fitting necessary for this transformer, so just return self
+        return self
+
+    def transform(self, X):
+        """
+        Apply z-score normalization to the data.
+
+        Parameters:
+        X (numpy.ndarray): Data array (channels x samples).
+
+        Returns:
+        numpy.ndarray: Normalized data.
+        """
+        print("Starting normalizing")
         
+        X, y = X
+        # Ensure data is of type float32 for precision
+        X = X.astype(np.float32)
+        N, C, F = X.shape
+        flattened = X.reshape(N, C * F)
+        # Apply BorderlineSMOTE
+        blsmote = BorderlineSMOTE(sampling_strategy=0.5)
+        print(len(flattened), " ", y.sum())
+        X_resampled, y_resampled = blsmote.fit_resample(flattened, y)
+
+        # Reshape the resampled data from (N, C * B) back to (N, C, B)
+        # N: number of samples, C: number of channels, F: number of features
+        N = X_resampled.shape[0]
+        X_resampled_reshaped = X_resampled.reshape(N, C, F)  # Reshape back to (N, C, F)
+        print("Size of dataset after SMOTE ", len(X_resampled_reshaped))
+        return (X_resampled_reshaped, y)
+
          
 class ZScoreNormalization(BaseEstimator, TransformerMixin):
     def __init__(self):
@@ -927,6 +968,7 @@ def load_npz_files(root_dir):
     seiz_labels = []
     non_seiz_labels = []
     cnt  = 0
+    seizure_count = 0
     # Walk through the root directory and subdirectories
     for subdir, dirs, files in os.walk(root_dir):
         for file in files:
@@ -935,9 +977,11 @@ def load_npz_files(root_dir):
                 file_path = os.path.join(subdir, file)
                 try:
                     # Load the npz file
-                    npz_file = np.load(file_path)
+                    npz_file = np.load(file_path, allow_pickle=True)
                     segment = torch.from_numpy(npz_file['x'].astype(np.float32))
+                    
                     label = torch.from_numpy(npz_file['y'].astype(np.float32))  # Ensure labels are float for comparison
+                    seizure_count += npz_file['y'].astype(np.float32)
                     # if(cnt % 1000 == 0):   
                     #     plot_channel_scatter(segment, 1, label)
                     # Append the segment and label to appropriate lists
@@ -952,6 +996,8 @@ def load_npz_files(root_dir):
                     print(f"Error loading {file_path}: {e}")
     # print("count, ", cnt)
     # Convert lists to tensors
+    
+    print("number of seizures: ", seizure_count)
     torch_seiz = torch.stack(seiz_segments)
     torch_non_seiz = torch.stack(non_seiz_segments)
     torch_seiz_labels = torch.stack(seiz_labels)
@@ -976,45 +1022,6 @@ def load_npz_files(root_dir):
     # Return both shuffled segments and their respective labels
     return (shuffled_seiz, shuffled_seiz_labels), (shuffled_non_seiz, shuffled_non_seiz_labels)
 
-
-def apply_SMOTE(seizures, seizure_labels, non_seizures, non_seizure_labels):
-    # Step 1: Stack the channels for both seizure and non-seizure segments
-    stacked_seiz = seizures.view(seizures.size(0), -1)
-    stacked_non_seiz = non_seizures.view(non_seizures.size(0), -1)
-
-    # Step 2: Combine the seizure data with non-seizure data
-    combined_data = torch.cat((stacked_seiz, stacked_non_seiz), dim=0)
-    combined_labels = torch.cat((seizure_labels, non_seizure_labels), dim=0)
-
-    # Step 3: Convert to numpy arrays for SMOTE
-    combined_data_np = combined_data.numpy()
-    combined_labels_np = combined_labels.numpy()
-
-    # Step 4: Apply BorderlineSMOTE
-    blsmote = BorderlineSMOTE(sampling_strategy="minority") 
-    X_resampled, y_resampled = blsmote.fit_resample(combined_data_np, combined_labels_np)
-
-    # Step 5: Reshape the resampled data from (N, C * B) back to (N, C, B)
-    # N: number of samples, C: number of channels, B: number of features
-    N = X_resampled.shape[0]
-    C = seizures.size(1)  # Number of channels
-    B = seizures.size(2)  # Number of features (time samples)
-    
-    X_resampled_reshaped = X_resampled.reshape(N, C, B)  # Reshape back to (N, C, B)
-
-    # Convert the reshaped data and labels back to torch tensors
-    X_resampled_torch = torch.from_numpy(X_resampled_reshaped).float()
-    y_resampled_torch = torch.from_numpy(y_resampled).long()
-
-    # Print the shapes for confirmation
-    print(f"Resampled data shape (torch): {X_resampled_torch.shape}")
-    print(f"Resampled labels shape (torch): {y_resampled_torch.shape}")
-    
-    # Return the resampled data and labels as PyTorch tensors
-    return X_resampled_torch, y_resampled_torch
-
-
-        
 
 
 def plot_channel_scatter(data, channel_idx, label):
@@ -1071,8 +1078,9 @@ def process_patient_folder(patient_folder, save_root):
     pipeline = Pipeline([('filters', BandpassFilter(sfreq=256, lowcut=1, highcut=40, order=6)),
                          ('normalizes', ZScoreNormalization()),
                          ('segments', SegmentSignals(fs=256, segment_length=4, overlap=0)),
-                         ('delete', DropSegments(drop_percentage=0.8))]) 
-    
+                         ('delete', DropSegments(drop_percentage=0.7))
+                        #('SMOTE', ApplySMOTE())
+                         ]) 
     X, y = pipeline.transform(X=(combined_eeg_data, combined_labels))
 
     print(f"Transformed data shape for {os.path.basename(patient_folder)}: {X.shape}")
@@ -1103,23 +1111,62 @@ def process_all_patients(dataset_path, save_root_path):
             process_patient_folder(full_patient_path, save_root_path)
 
 
+
+# This function uses the previous approach, where only data from files with .seizure file are segmented. 
+# Also pipeline is applied per file instead of applying it once when all data is concatenated. 
+def process_seizure_files():
+    
+    from tqdm import tqdm
+    from common.utils import load_edf_filepaths, clean_path, load_eeg_file, save_spectrograms_and_labels
+    
+    """
+    WARNING: Current code computes features for svm.
+    """
+    
+    dataset_path = "./data/dataset/train/raw/"
+    dataset_save_root_path = "./data/dataset/train/features-balanced/"
+    
+    files_list = load_seizure_edf_filepaths(dataset_path)
+    
+    pbar = tqdm(files_list)
+    for file in pbar: 
+        # pbar.set_description(f"current file {file}")
+
+        # channels="FZ-CZ;CZ-PZ;F8-T8;P4-O2;FP2-F8;F4-C4;C4-P4;P3-O1;FP2-F4;F3-C3;C3-P3;P7-O1;FP1-F3;F7-T7;T7-P7;FP1-F7"
+        eeg_file = load_eeg_file(file)
+
+        if eeg_file == None:
+            print('its none')
+            continue
+        
+        eeg_data = eeg_file.data
+        labels = eeg_file.get_labels()
+        
+        pipeline = Pipeline([
+            ('bandpass', BandpassFilter(sfreq=256, lowcut=1, highcut=40, order=6)),
+            ('segment', SegmentSignals(fs=256, segment_length=1, ))
+            ])
+        
+        save_dir, filename = clean_path(file, dataset_path)
+        save_dir = dataset_save_root_path + save_dir
+        filename = filename.split('.')[0]        
+        pbar.set_description(f"saved {filename} of size: {X.shape} to {save_dir}")
+            
+        save_spectrograms_and_labels(X, y, save_dir=save_dir, filename=filename)
+    
+
 if __name__ == "__main__":
     dataset_path = "./data/dataset/train/raw/chb01"
-    save_root_path = "./data/dataset/test_dataset_chb01_20%/"
+    save_root_path = "./data/dataset/chb01_test_0.3/"
+
+    # If you want to use the previous dataset creation approach, use this:
+    # process_seizure_files()
 
     # If you want to process all directories
-    process_all_patients(dataset_path, save_root_path)
-    # Process all patients
+    # process_all_patients(dataset_path, save_root_path)
+    
+    # If you want to process a single patient (for test set), use this
     process_patient_folder(dataset_path, save_root_path)
-        
-    # print("Starting SMOTE process")
-    # (seizures, seizure_labels), (non_seizures, non_seizure_labels) = load_npz_files(".\data\dataset\signals")
-    # X, Y = apply_SMOTE(seizures, seizure_labels, non_seizures, non_seizure_labels)
     
-    # save_dir = "./data/dataset/signals-SMOTE"
-    # save_spectrograms_and_labels(X, Y, save_dir=save_dir, filename="SMOTE")
-    # print("X after SMOTE has type ", type(X), " Shape ", X.shape)
-    # print("Y after SMOTE has type ", type(Y), " Shape ", Y.shape)
-    
-]
+    # load_npz_files("./data/dataset/chb01_test_0.2")
 

@@ -118,12 +118,12 @@ def save_signals_and_labels(X, y, save_dir, filename):
     # Iterate over each signal (N dimension) and save with corresponding labels
     for index in range(X.shape[0]):
         signal = X[index]  # Shape (C, F)
-        
+        label = y[index]
         # Construct the file name with the index
         save_file = f"{filename.split('.')[0]}_{index}.npz"
         
         # Save the signal and labels using the keys 'x' and 'y'
-        np.savez(os.path.join(save_dir, save_file), x=signal, y=y, allow_pickle=True)
+        np.savez(os.path.join(save_dir, save_file), x=signal, y=label, allow_pickle=True)
         
     print(f"Saved {X.shape[0]} files in {save_dir}")
 
