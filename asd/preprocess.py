@@ -11,6 +11,12 @@ from scipy import stats, signal
 from sklearn.preprocessing import normalize
 from sklearn.impute import SimpleImputer
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import os
+from imblearn.over_sampling import BorderlineSMOTE
+import torch
+import matplotlib.pyplot as plt
+from tqdm import tqdm
+from common.utils import load_edf_filepaths, clean_path, load_eeg_file, save_spectrograms_and_labels, save_signals_and_labels
 
 
 class BandpassFilter(BaseEstimator, TransformerMixin):
@@ -20,7 +26,7 @@ class BandpassFilter(BaseEstimator, TransformerMixin):
 
         Parameters:
         sfreq (float): Sampling frequency of the EEG data.
-        lowcut (float): Lower frequency bound (default 0 Hz).
+        lowcut (float): Lower frequency bound (default 0 Hz).ratio
         highcut (float): Upper frequency bound (default 128 Hz).
         order (int): Order of the filter (default 6).
         """
@@ -811,7 +817,7 @@ class HFBandFeatureExtraction(BaseEstimator, TransformerMixin):
 
     
 class BalanceSeizureSegments(BaseEstimator, TransformerMixin):
-    def __init__(self, random_state=None):
+    def __init__(self, random_state=None, ratio=1):
         """
         Custom sklearn transformer that balances seizure and non-seizure segments
         by randomly sampling non-seizure segments.
@@ -820,6 +826,7 @@ class BalanceSeizureSegments(BaseEstimator, TransformerMixin):
         random_state (int, optional): Seed for the random number generator for reproducibility.
         """
         self.random_state = random_state
+        self.ratio = ratio
 
     def fit(self, X, y=None):
         # No fitting necessary for this transformer, so just return self
@@ -845,9 +852,8 @@ class BalanceSeizureSegments(BaseEstimator, TransformerMixin):
         # Separate seizure and non-seizure segments
         seizure_segments = [segment for segment in X if segment[1] == 1]
         non_seizure_segments = [segment for segment in X if segment[1] == 0]
-        
         # Number of seizure segments
-        num_seizures = len(seizure_segments)
+        num_seizures = len(seizure_segments) * self.ratio
         
         # Randomly sample non-seizure segments to match the number of seizure segments
         sampled_non_seizure = rnd.sample(non_seizure_segments, min(num_seizures, len(non_seizure_segments)))
@@ -1072,7 +1078,6 @@ def process_patient_folder(patient_folder, save_root):
                          ('normalizes', ZScoreNormalization()),
                          ('segments', SegmentSignals(fs=256, segment_length=4, overlap=0)),
                          ('delete', DropSegments(drop_percentage=0.7))
-                        #('SMOTE', ApplySMOTE())
                          ]) 
     X, y = pipeline.transform(X=(combined_eeg_data, combined_labels))
 
@@ -1150,7 +1155,7 @@ def process_seizure_files():
 
 if __name__ == "__main__":
     dataset_path = "./data/dataset/train/raw/chb01"
-    save_root_path = "./data/dataset/chb01_test_0.3/"
+    save_root_path = "./data/dataset/chb01_test_smote"
 
     # If you want to use the previous dataset creation approach, use this:
     # process_seizure_files()
