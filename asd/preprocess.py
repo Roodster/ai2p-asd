@@ -1076,11 +1076,10 @@ def process_patient_folder(patient_folder, save_root):
     # Apply the pipeline on the combined data
     pipeline = Pipeline([('filters', BandpassFilter(sfreq=256, lowcut=1, highcut=40, order=6)),
                          ('normalizes', ZScoreNormalization()),
-                         ('segments', SegmentSignals(fs=256, segment_length=4, overlap=0)),
-                         ('delete', DropSegments(drop_percentage=0.7))
+                         ('segments', SegmentSignals(fs=256, segment_length=4, overlap=0))
+                        #  ('delete', DropSegments(drop_percentage=0.7))
                          ]) 
     X, y = pipeline.transform(X=(combined_eeg_data, combined_labels))
-
     print(f"Transformed data shape for {os.path.basename(patient_folder)}: {X.shape}")
     print(f"Transformed labels shape for {os.path.basename(patient_folder)}: {y.shape}")
 
@@ -1108,6 +1107,8 @@ def process_all_patients(dataset_path, save_root_path):
         if os.path.isdir(full_patient_path):  # Only process directories (patient folders)
             process_patient_folder(full_patient_path, save_root_path)
 
+    
+    
 
 
 # This function uses the previous approach, where only data from files with .seizure file are segmented. 
@@ -1154,8 +1155,8 @@ def process_seizure_files():
     
 
 if __name__ == "__main__":
-    dataset_path = "./data/dataset/train/raw/chb01"
-    save_root_path = "./data/dataset/chb01_test_smote"
+    dataset_path = "./data/dataset/train/raw/minichb01"
+    save_root_path = "./data/dataset/chb01_test_smoteee"
 
     # If you want to use the previous dataset creation approach, use this:
     # process_seizure_files()

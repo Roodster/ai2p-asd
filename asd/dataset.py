@@ -84,7 +84,7 @@ class OnlineSegmentsDataset(Dataset):
                 if file.endswith('.npz'):
                     file_list.append(os.path.join(root, file))
                     
-        return file_list
+        return sorted(file_list)
 
     def __len__(self):
         return len(self.file_list)
@@ -151,7 +151,7 @@ class OfflineSegmentsDataset(Dataset):
                 if file.endswith('.npz'):
                     file_list.append(os.path.join(root, file))
                     
-        return file_list
+        return sorted(file_list)
 
     def _load_data(self):
         """
