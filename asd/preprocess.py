@@ -143,16 +143,16 @@ class Spectrograms(BaseEstimator, TransformerMixin):
         
         
         
-        S = libf.melspectrogram(y=channel_data, sr=self.fs, win_length=self.window, hop_length=self.window, n_fft=self.window, n_mels=self.fs)
-        # S_db = lib.power_to_db(S)
+        S = libf.melspectrogram(y=channel_data.astype(np.float32), sr=self.fs, win_length=self.window, hop_length=self.window, n_fft=self.window, n_mels=self.fs)
+        S_db = lib.power_to_db(S)
         # # Normalize the spectrogram to the range [0, 1]
-        # S_norm = np.average((S_db - np.min(S_db)) / (np.max(S_db) - np.min(S_db)), axis=1)
+        S_norm = np.average((S_db - np.min(S_db)) / (np.max(S_db) - np.min(S_db)), axis=1)
         
         # # Expand to 1 grayscale channel (optional step to keep the dimensions consistent)
-        # S_gray = np.expand_dims(S_norm, axis=1)  # Shape becomes (1, height, width)
+        S_gray = np.expand_dims(S_norm, axis=1)  # Shape becomes (1, height, width)
 
-        # return S_gray.transpose(0, 1, 3, 2)[:, :, :-1, :]
-        return S
+        return S_gray.transpose(0, 1, 3, 2)[:, :, :-1, :]
+
     def transform(self, X, y=None):
         """
         Generate spectrograms for each EEG segment.
@@ -1122,8 +1122,8 @@ def process_seizure_files():
     WARNING: Current code computes features for svm.
     """
     
-    dataset_path = "./data/dataset/train/raw/"
-    dataset_save_root_path = "./data/dataset/train/features-balanced/"
+    dataset_path = "./data/dataset/train/raw/temp"
+    dataset_save_root_path = "./data/dataset/test/"
     
     files_list = load_seizure_edf_filepaths(dataset_path)
     
@@ -1143,9 +1143,11 @@ def process_seizure_files():
         
         pipeline = Pipeline([
             ('bandpass', BandpassFilter(sfreq=256, lowcut=1, highcut=40, order=6)),
-            ('segment', SegmentSignals(fs=256, segment_length=1, ))
+            ('segment', Spectrograms(fs=256, nperseg=4, noverlap=0, max_workers=4))
             ])
         
+        X, y = pipeline.transform((eeg_data, labels))
+
         save_dir, filename = clean_path(file, dataset_path)
         save_dir = dataset_save_root_path + save_dir
         filename = filename.split('.')[0]        
