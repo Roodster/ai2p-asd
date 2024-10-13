@@ -83,8 +83,7 @@ class OnlineSegmentsDataset(Dataset):
             for file in files:
                 if file.endswith('.npz'):
                     file_list.append(os.path.join(root, file))
-                    
-        return file_list
+        return sorted(file_list, key=lambda x: int(re.findall(r'\d+', x)[-1]))
 
     def __len__(self):
         return len(self.file_list)
@@ -105,8 +104,6 @@ class OnlineSegmentsDataset(Dataset):
 class OfflineSegmentsDataset(Dataset):
     def __init__(self, root_dir, mode='full', patient_id=None):
         """
-        
-
         Args:
             root_dir: path to directory
             modes: 
@@ -151,7 +148,7 @@ class OfflineSegmentsDataset(Dataset):
                 if file.endswith('.npz'):
                     file_list.append(os.path.join(root, file))
                     
-        return file_list
+        return sorted(file_list, key=lambda x: int(re.findall(r'\d+', x)[-1]))
 
     def _load_data(self):
         """

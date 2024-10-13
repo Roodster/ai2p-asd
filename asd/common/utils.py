@@ -48,7 +48,7 @@ def load_spectrograms_and_labels(load_dir, filename):
     return data
 
 
-def load_edf_filepaths(root_path):
+def load_seizure_edf_filepaths(root_path):
     edf_files = []
     
     # Walk through all directories and subdirectories
@@ -59,8 +59,19 @@ def load_edf_filepaths(root_path):
             seizure_file = filename + '.seizures'
             if os.path.exists(seizure_file):
                 edf_files.append(r'{}'.format(filename))
-    
     return edf_files
+
+
+def load_edf_filepaths(root_path):
+    edf_files = []
+    
+    # Walk through all directories and subdirectories
+    for dirpath, dirnames, filenames in os.walk(root_path):
+        # Find all .edf files in the current directory
+        for filename in glob.glob(os.path.join(dirpath, '*.edf')):
+            edf_files.append(r'{}'.format(filename))
+    return edf_files
+
 
 def load_eeg_file(file, channels="F7-T7;T7-P7;F8-T8;T8-P8"):
     # Load a single file
@@ -89,6 +100,33 @@ def save_spectrograms_and_labels(spectrograms, labels, save_dir, filename):
         save_file = f"{a}_{index}.npz"
          
         np.savez(os.path.join(save_dir, save_file.replace('+', '')), x=spectrogram, y=label, allow_pickle=True)
+        
+        
+def save_signals_and_labels(X, y, save_dir, filename):
+    """
+    Save signals and labels to .npz files.
+    
+    :param X: numpy array of signals with shape (N, C, F)
+    :param y: numpy array of labels with shape (F)
+    :param save_dir: directory to save the files
+    :param filename: base name for the saved files
+    """
+    # Create the save directory if it doesn't exist
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+
+    # Iterate over each signal (N dimension) and save with corresponding labels
+    for index in range(X.shape[0]):
+        signal = X[index]  # Shape (C, F)
+        label = y[index]
+        # Construct the file name with the index
+        save_file = f"{filename.split('.')[0]}_{index}.npz"
+        
+        # Save the signal and labels using the keys 'x' and 'y'
+        np.savez(os.path.join(save_dir, save_file), x=signal, y=label, allow_pickle=True)
+        
+    print(f"Saved {X.shape[0]} files in {save_dir}")
+
 
 
 def set_seed(seed):
