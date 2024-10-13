@@ -44,25 +44,25 @@ class Writer():
     
     def save_model(self, model, epoch):
         _dir = os.path.join(self.model_dir)
-        file = f"/model_{self.args.model_name}_{epoch}.pickle"
+        file = f"/model_chb{self.args.patient_id}_{self.args.model_name}_{epoch}.pickle"
 
         full_path = _dir + file
         th.save(model.state_dict(), full_path)
     
     def save_plot(self, plot, attribute):
-        filepath = f"/plot_{self.args.exp_name}_{self.args.model_name}_{attribute}.png"
+        filepath = f"/plot_{self.args.exp_name}_chb{self.args.patient_id}_{self.args.model_name}_{attribute}.png"
         
         plot_path = self.train_dir + filepath
         
         plot.savefig(plot_path)
     
     def save_statistics(self, statistics):
-        filepath = f"/stats_{self.args.exp_name}_{self.args.model_name}.csv"
+        filepath = f"/stats_{self.args.exp_name}_chb{self.args.patient_id}_{self.args.model_name}.csv"
         stats_path = self.train_dir + filepath
         statistics.to_csv(stats_path, index=False)
             
     def save_hyperparameters(self, hyperparameters):
-        filepath = f"/hyperparameters_{self.args.exp_name}_{self.args.model_name}.yaml"
+        filepath = f"/hyperparameters_{self.args.exp_name}_chb{self.args.patient_id}_{self.args.model_name}.yaml"
 
         hyperparams_path = self.train_dir + filepath
         with open(hyperparams_path, 'w') as f:

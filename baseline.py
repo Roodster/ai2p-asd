@@ -49,7 +49,7 @@ def calculate_metrics(y_true, y_pred):
 
 
 
-def process_patient(patient_id, args):
+def process_patient(patient_id, model_path=None):
     print(f"Processing patient {patient_id}")
     train_dataset = OfflineFeaturesDataset(root_dir="./data/dataset/train/features-balanced/", mode='train', patient_id=str(patient_id).zfill(2))
     test_dataset = OfflineFeaturesDataset(root_dir="./data/dataset/test/features-all/", mode='test', patient_id=str(patient_id).zfill(2))
@@ -62,14 +62,22 @@ def process_patient(patient_id, args):
     X_test = np.nan_to_num(np.vstack([segment.numpy() for segment, _ in test_data]))
     y_test = np.vstack([label.item() for _, label in test_data]).flatten()
 
-    svm = SVC(kernel='rbf', degree=3, C=10, gamma='scale')
-    svm.fit(X_train, y_train)
+    if model_path is not None:
+            # Load the pre-trained model from the given path
+            with open(model_path, 'rb') as f:
+                svm = pickle.load(f)
+            print(f"Loaded model from {model_path}")
+    else:        
+
+        svm = SVC(kernel='rbf', degree=3, C=10, gamma='scale')
+        svm.fit(X_train, y_train)
+
+        with open(f'svm_patientid_{patient_id}.pkl', 'wb') as f:
+            pickle.dump(svm, f)
 
     y_pred = svm.predict(X_test)
     metrics = calculate_metrics(y_test, y_pred)
 
-    with open(f'svm_patientid_{patient_id}.pkl', 'wb') as f:
-        pickle.dump(svm, f)
 
     print(f"===== PATIENT {patient_id} =====")
     print(f"Accuracy: {metrics[0]}")
@@ -86,18 +94,23 @@ if __name__ == "__main__":
     args = Args(file="./data/configs/default.yaml")
     set_seed(42)
 
-    patient_ids = list(range(9,10))
-    metrics = [None] * len(patient_ids)
+    process_patient(16, model_path="D:\\tudelft\\ai2p-asd\logs\svm_results\svm_patientid_16.pkl")
+    process_patient(18, model_path="D:\\tudelft\\ai2p-asd\logs\svm_results\svm_patientid_18.pkl")
 
-    with ThreadPoolExecutor(max_workers=8) as executor:
-        future_to_patient = {executor.submit(process_patient, patient_id, args): patient_id for patient_id in patient_ids}
+    # patient_ids = list(range(9,10))
+    # metrics = [None] * len(patient_ids)
+
+
+
+    # with ThreadPoolExecutor(max_workers=8) as executor:
+    #     future_to_patient = {executor.submit(process_patient, patient_id, args): patient_id for patient_id in patient_ids}
         
-        for future in as_completed(future_to_patient):
-            patient_id, patient_metrics = future.result()
-            metrics[patient_id - 1] = patient_metrics
+    #     for future in as_completed(future_to_patient):
+    #         patient_id, patient_metrics = future.result()
+    #         metrics[patient_id - 1] = patient_metrics
 
-    metrics = np.array(metrics)
-    np.savetxt("svm_statistics_per_patient.csv", metrics, delimiter=",")
+    # metrics = np.array(metrics)
+    # np.savetxt("svm_statistics_per_patient.csv", metrics, delimiter=",")
     
 
     

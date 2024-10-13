@@ -66,5 +66,48 @@ class Plots:
             # save figure
             plt.show()
 
+    def plot_attention_maps(self, attention_scores, layer_idx=0, head_idx=0):
+        """
+        Visualize the attention scores for a specific layer and attention head.
 
+        Args:
+            attention_scores (list of tensors): List of attention scores for each layer.
+            layer_idx (int): Layer index to visualize.
+            head_idx (int): Attention head index to visualize.
+        """
+        # Select the attention score of the specified layer and head
+        attn = attention_scores[layer_idx][0, head_idx].detach().cpu().numpy()
+
+        # Plot the attention map
+        plt.figure(figsize=(8, 8))
+        plt.imshow(attn, cmap='viridis')
+        plt.title(f"Attention Map - Layer {layer_idx}, Head {head_idx}")
+        plt.colorbar()
+        plt.show()
         
+    def plot_aggregated_attention(self, attention_scores, layer_idx=0, mode='mean'):
+            """
+            Visualize the aggregated attention scores for a specific layer, independent of attention heads.
+
+            Args:
+                attention_scores (list of tensors): List of attention scores for each layer.
+                layer_idx (int): Layer index to visualize.
+                mode (str): Aggregation mode for heads. Options are 'mean' or 'sum'.
+            """
+            # Aggregate attention scores across heads
+            if mode == 'mean':
+                aggregated_attention = attention_scores[layer_idx].mean(dim=1)  # Average over heads
+            elif mode == 'sum':
+                aggregated_attention = attention_scores[layer_idx].sum(dim=1)  # Sum over heads
+            else:
+                raise ValueError("Invalid mode. Choose 'mean' or 'sum'.")
+
+            # Extract the attention map for the first input sequence
+            attn = aggregated_attention[0].detach().cpu().numpy()
+
+            # Plot the aggregated attention map
+            plt.figure(figsize=(8, 8))
+            plt.imshow(attn, cmap='viridis')
+            plt.title(f"Aggregated Attention Map - Layer {layer_idx} ({mode})")
+            plt.colorbar()
+            plt.show()
