@@ -249,8 +249,8 @@ class Encoder(BaseModel):
 class Transformer(BaseModel):
     def __init__(self, args, img_size=(4,256), patch_sizes=(4,4), in_channels=1, n_encoders=1):
         super(Transformer, self).__init__(args=args)
-        self.embeddings = Embeddings(args, img_size=img_size, patch_sizes=patch_sizes, in_channels=in_channels, n_encoders=n_encoders).to(self.device)
-        self.encoder = Encoder(args).to(self.device)
+        self.embeddings = Embeddings(args, img_size=img_size, patch_sizes=patch_sizes, in_channels=in_channels).to(self.device)
+        self.encoder = Encoder(args, n_encoders=n_encoders).to(self.device)
 
     def forward(self, x):
         x = x.to(self.device)
