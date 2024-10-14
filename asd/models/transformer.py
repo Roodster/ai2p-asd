@@ -211,8 +211,8 @@ class Block(BaseModel):
         # print(f"Block attention {x.shape}")
 
         x = self.attention_norm(x)
-        x = self.attn(x)
-        x = x + h
+        x_att = self.attn(x)
+        x = x_att + h
 
         h = x
         # print(f"Block ffn_norm {x.shape}")
@@ -221,7 +221,7 @@ class Block(BaseModel):
         x = self.ffn(x)
         x = x + h
         # print(f"Block ffn {x.shape}")
-        return x
+        return x, x_att
 
 
 
@@ -239,7 +239,7 @@ class Encoder(BaseModel):
         hidden_states = hidden_states.to(self.device)
 
         for layer_block in self.layer:
-            hidden_states = layer_block(hidden_states)
+            hidden_states, _ = layer_block(hidden_states)
         encoded = self.encoder_norm(hidden_states)
         # print(f"Encoder encoded {encoded.shape}")
 
@@ -260,7 +260,7 @@ class Transformer(BaseModel):
         embedding_output = self.embeddings(x)
         # print(f"Encoder encoded {embedding_output.shape}")
 
-        encoded = self.encoder(embedding_output)
+        encoded, attention_scores = self.encoder(embedding_output)
         # print(f"Encoder encoded {encoded.shape}")
 
         return encoded
