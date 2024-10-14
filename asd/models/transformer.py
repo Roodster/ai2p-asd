@@ -260,7 +260,7 @@ class Transformer(BaseModel):
         embedding_output = self.embeddings(x)
         # print(f"Encoder encoded {embedding_output.shape}")
 
-        encoded, attention_scores = self.encoder(embedding_output)
+        encoded = self.encoder(embedding_output)
         # print(f"Encoder encoded {encoded.shape}")
 
         return encoded
