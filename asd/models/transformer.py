@@ -199,9 +199,9 @@ class Block(BaseModel):
         super(Block, self).__init__(args=args)
         self.hidden_size = 256
         self.attention_norm = LayerNorm(256, eps=1e-6).to(self.device)
+        self.attn = Attention(args).to(self.device)
         self.ffn_norm = LayerNorm(256, eps=1e-6).to(self.device)
         self.ffn = MLP(args).to(self.device)
-        self.attn = Attention(args).to(self.device)
 
     def forward(self, x):
         # print(f"Block {x.shape}")
