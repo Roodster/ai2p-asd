@@ -100,6 +100,7 @@ class EventScoring(_Scoring):
                 Defaults to default values.
         """
         # Resample data
+        self.fs = param.fs
         self.ref = Annotation(ref_mask, self.fs)
         self.hyp = Annotation(hyp_mask, self.fs)
 
@@ -230,4 +231,4 @@ def segments_to_events(lst):
     return lst,time_segments
 
 
-print(segments_to_events([1,0,0,1,1,1,1,1,0,0,0,0,1,0,1,0,1,1,1,1,0,1,0,1,0,0,0,0,1,1,1,0,1,1,0,0,1]))
+print(EventScoring([1,0,0,1,1,1,1,1,0,0,0,0,1,0,1,0,1,1,1,1,0,1,0,1,0,0,0,0,1,1,1,0,1,1,0,0,1], [1,0,1,1,1,1,0,1,0,1,0,0,1,0,0,0,1,1,1,1,0,1,0,1,0,0,0,0,0,1,1,0,1,1,0,0,1]))
