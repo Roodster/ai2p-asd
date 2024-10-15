@@ -16,7 +16,7 @@ from imblearn.over_sampling import BorderlineSMOTE
 import torch
 import matplotlib.pyplot as plt
 from tqdm import tqdm
-#from common.utils import load_edf_filepaths, clean_path, load_eeg_file, save_spectrograms_and_labels, save_signals_and_labels
+from asd.common.utils import load_edf_filepaths, clean_path, load_eeg_file, save_spectrograms_and_labels, save_signals_and_labels
 
 
 class BandpassFilter(BaseEstimator, TransformerMixin):
