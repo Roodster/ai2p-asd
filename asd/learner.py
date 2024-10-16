@@ -143,7 +143,7 @@ class Learner(BaseLearner):
             ref = Annotation(all_labels, fs = 0.25)
             hyp = Annotation(all_predictions, fs = 0.25)
             plotEventScoring(ref, hyp)
-            plotIndividualEvents(ref, hyp)
+            # plotIndividualEvents(ref, hyp)
             results.fp_rates = scores.fpRate
             results.precisions = scores.precision
             results.sensitivities = scores.sensitivity
