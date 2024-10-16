@@ -27,7 +27,6 @@ def plotEventScoring(ref: Annotation, hyp: Annotation,
     """
     score = EventScoring(ref.mask, hyp.mask, param)
     time = np.arange(len(ref.mask)) / ref.fs
-    print("bURDAYAM DA BLAAA!")
 
     if ax is None:
         plt.figure(figsize=(16, 3))
@@ -82,7 +81,6 @@ def plotEventScoring(ref: Annotation, hyp: Annotation,
     if showLegend:
         _buildLegend(lineTp, lineFn, lineFp, score, ax)
 
-    print("bURDAYAM DA BLAAA2!")
 
     plt.show()  # Ensure the plot is shown in Kaggle
 
