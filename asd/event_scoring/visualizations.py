@@ -4,7 +4,7 @@ import matplotlib.colors as mc
 import colorsys
 import numpy as np
 
-from .annotations import Annotation
+from .annotation import Annotation
 from .scoring import EventScoring
 
 def plotEventScoring(ref: Annotation, hyp: Annotation,
