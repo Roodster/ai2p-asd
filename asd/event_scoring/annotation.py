@@ -4,7 +4,6 @@ from typing import List, Tuple
 import numpy as np
 from nptyping import Bool, NDArray, Shape
 
-@dataclass(frozen=True)
 class Annotation:
     """Class to store annotations both as a binary mask and as a list of events.
 
