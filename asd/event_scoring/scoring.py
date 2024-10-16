@@ -5,6 +5,7 @@ import numpy as np
 from .annotation import Annotation
 import torch as th
 
+
 class _Scoring:
     """" Base class for different scoring methods. The class provides the common
     attributes and computation of common scores based on these attributes.
@@ -252,5 +253,3 @@ def segments_to_events(lst):
     # Convert indices to time in seconds
     time_segments = [(start * 4, (end + 1) * 4) for start, end in start_end_times]
     return lst,time_segments
-
-print(EventScoring([1,0,0,1,1,1,1,1,0,0,0,0,1,0,1,0,1,1,1,1,0,1,0,1,0,0,0,0,1,1,1,0,1,1,0,0,1], [1,0,1,1,1,1,0,1,0,1,0,0,1,0,0,0,1,1,1,1,0,1,0,1,0,0,0,0,0,1,1,0,1,1,0,0,1]))
