@@ -5,7 +5,6 @@ import numpy as np
 from .annotation import Annotation
 import torch as th
 
-
 class _Scoring:
     """" Base class for different scoring methods. The class provides the common
     attributes and computation of common scores based on these attributes.
@@ -66,7 +65,7 @@ class EventScoring(_Scoring):
                      toleranceEnd: float = 60,
                      minOverlap: float = 0,
                      maxEventDuration: float = 5 * 60,
-                     minDurationBetweenEvents: float = 32,
+                     minDurationBetweenEvents: float = 8,
                      segment_size: float = 4
                      ):
             """Parameters for event scoring
@@ -107,6 +106,9 @@ class EventScoring(_Scoring):
         # Merge events separated by less than param.minDurationBetweenEvents
         self.ref = EventScoring._mergeNeighbouringEvents(self.ref, param.minDurationBetweenEvents)
         self.hyp = EventScoring._mergeNeighbouringEvents(self.hyp, param.minDurationBetweenEvents)
+        
+        self.ref = EventScoring._convert_isolated_ones(self.ref)
+        self.hyp = EventScoring._convert_isolated_ones(self.hyp)
 
         # Split long events to param.maxEventDuration
         self.ref = EventScoring._splitLongEvents(self.ref, param.maxEventDuration)
@@ -131,8 +133,29 @@ class EventScoring(_Scoring):
         for event in self.hyp.events:
             if np.all(~self.tpMask[round(event[0] * self.fs):round(event[1] * self.fs)]):
                 self.fp += 1
-
         self.computeScores()
+        
+    def _convert_isolated_ones(events: Annotation) -> Annotation:
+        """
+        Convert elements in the boolean array that have both left and right neighbors equal to 0 to 0.
+
+        Args:
+            arr (np.ndarray): Input boolean array.
+
+        Returns:
+            np.ndarray: Modified array with isolated ones replaced by zeros.
+        """
+        result = events.mask.copy()
+        # Make sure the input is a 1D numpy array
+        if result.ndim != 1:
+            raise ValueError("Input array must be a 1D array")
+
+        # Process elements from the second to the second-last (ignore the edges)
+        for i in range(1, len(events.mask) - 1):
+            if events.mask[i - 1] == 0 and events.mask[i + 1] == 0:
+                result[i] = 0
+
+        return Annotation(result, events.fs) 
 
     def _splitLongEvents(events: Annotation, maxEventDuration: float) -> Annotation:
         """Split events longer than maxEventDuration in shorter events.
@@ -151,7 +174,7 @@ class EventScoring(_Scoring):
             if event[1] - event[0] > maxEventDuration:
                 shorterEvents[i] = (event[0], event[0] + maxEventDuration)
                 shorterEvents.insert(i + 1, (event[0] + maxEventDuration, event[1]))
-
+        
         return Annotation(shorterEvents, events.fs, len(events.mask))
 
     def _mergeNeighbouringEvents(events: Annotation, minDurationBetweenEvents: float) -> Annotation:
@@ -230,5 +253,3 @@ def segments_to_events(lst):
     time_segments = [(start * 4, (end + 1) * 4) for start, end in start_end_times]
     return lst,time_segments
 
-
-print(EventScoring([1,0,0,1,1,1,1,1,0,0,0,0,1,0,1,0,1,1,1,1,0,1,0,1,0,0,0,0,1,1,1,0,1,1,0,0,1], [1,0,1,1,1,1,0,1,0,1,0,0,1,0,0,0,1,1,1,1,0,1,0,1,0,0,0,0,0,1,1,0,1,1,0,0,1]))

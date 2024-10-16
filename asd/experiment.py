@@ -4,22 +4,23 @@ from tqdm import tqdm
 
 from asd.common.utils import set_seed
 from asd.writer import Writer
-from asd.plots import Plots
-from asd.results import Results
+from asd.plots import Plots, EventPlots
+from asd.results import Results, EventResults
 
 
 class Experiment:
     
     
-    def __init__(self, args, learner, results, label_transformer=None, do_plot=True, verbose=False):
+def __init__(self, args, learner, results, label_transformer=None, do_plot=True, verbose=False, event_scoring=False):
         assert learner is not None, "NO learner"
 
         # ===== DEPENDENCIES =====
+        self.event_scoring=event_scoring
         self.args = args
         self.learner = learner
         self.results = results
         self.writer = Writer(args=args)
-        self.plots = Plots()
+        self.plots = EventPlots() if event_scoring else Plots()
         self.label_transformer = label_transformer
         
         self.start_epochs = len(self.results.epochs)
@@ -28,7 +29,6 @@ class Experiment:
          # ===== TRAINING =====
         self.device = args.device
         self.n_epochs = args.n_epochs       
-        
         
         
         # ===== EVALUATION =====
