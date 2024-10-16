@@ -124,7 +124,8 @@ def plotIndividualEvents(ref: Annotation, hyp: Annotation,
         ax.set_xlim(window)
         plt.title('Event {}'.format(i))
     plt.tight_layout()
-
+    
+    plt.show()  # Ensure the plot is shown in Kaggle
     return plt.gcf()
 
 
