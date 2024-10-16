@@ -120,7 +120,7 @@ def plotIndividualEvents(ref: Annotation, hyp: Annotation,
     plt.figure(figsize=(16, nrow * 2))
     for i, window in enumerate(listofWindows):
         ax = plt.subplot(nrow, NCOL, i + 1)
-        plotEventScoring(ref.mask, hyp.mask, showLegend=False, ax=ax)
+        plotEventScoring(ref, hyp, showLegend=False, ax=ax)
         ax.set_xlim(window)
         plt.title('Event {}'.format(i))
     plt.tight_layout()
