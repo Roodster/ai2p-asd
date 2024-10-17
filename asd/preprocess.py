@@ -16,7 +16,7 @@ from imblearn.over_sampling import BorderlineSMOTE
 import torch
 import matplotlib.pyplot as plt
 from tqdm import tqdm
-from common.utils import load_edf_filepaths, clean_path, load_eeg_file, save_spectrograms_and_labels, save_signals_and_labels
+from common.utils import load_edf_filepaths, clean_path, load_eeg_file, save_spectrograms_and_labels, save_signals_and_labels, load_seizure_edf_filepaths
 
 
 class BandpassFilter(BaseEstimator, TransformerMixin):
@@ -103,7 +103,6 @@ class SegmentSignals(BaseEstimator, TransformerMixin):
             end = start + samples_per_segment
             segment = eeg_data[:, start:end]
             segmented_data.append(segment)
-
             # Determine label for the segment (majority vote)
             segment_label = int(np.sum(labels[start:end] > 0) > (end - start) / 2)
             segment_labels.append(segment_label)
@@ -1045,7 +1044,7 @@ def process_patient_folder(patient_folder, save_root):
     all_labels = []
 
     # Load all .edf file paths for the current patient
-    files_list = load_edf_filepaths(patient_folder)
+    files_list = load_seizure_edf_filepaths(patient_folder)
     
     pbar = tqdm(files_list)
     for file in pbar: 
@@ -1076,9 +1075,9 @@ def process_patient_folder(patient_folder, save_root):
     # Apply the pipeline on the combined data
     pipeline = Pipeline([('filters', BandpassFilter(sfreq=256, lowcut=1, highcut=40, order=6)),
                          ('normalizes', ZScoreNormalization()),
-                         ('segments', SegmentSignals(fs=256, segment_length=4, overlap=0))
-                        #  ('delete', DropSegments(drop_percentage=0.7))
-                         ]) 
+                         ('segments', SegmentSignals(fs=256, segment_length=4, overlap=2)),
+                         ('balance', BalanceSeizureSegments(ratio=15))]) 
+
     X, y = pipeline.transform(X=(combined_eeg_data, combined_labels))
     print(f"Transformed data shape for {os.path.basename(patient_folder)}: {X.shape}")
     print(f"Transformed labels shape for {os.path.basename(patient_folder)}: {y.shape}")
@@ -1116,7 +1115,7 @@ def process_all_patients(dataset_path, save_root_path):
 def process_seizure_files():
     
     from tqdm import tqdm
-    from common.utils import load_edf_filepaths, clean_path, load_eeg_file, save_spectrograms_and_labels
+    from common.utils import load_seizure_edf_filepaths, clean_path, load_eeg_file, save_spectrograms_and_labels
     
     """
     WARNING: Current code computes features for svm.
@@ -1157,17 +1156,17 @@ def process_seizure_files():
     
 
 if __name__ == "__main__":
-    dataset_path = "./data/dataset/train/raw/minichb01"
-    save_root_path = "./data/dataset/chb01_test_smoteee"
+    dataset_path = "./data/dataset/train/raw"
+    save_root_path = "./data/dataset/training-15-1"
 
     # If you want to use the previous dataset creation approach, use this:
     # process_seizure_files()
 
     # If you want to process all directories
-    # process_all_patients(dataset_path, save_root_path)
+    process_all_patients(dataset_path, save_root_path)
     
     # If you want to process a single patient (for test set), use this
-    process_patient_folder(dataset_path, save_root_path)
+    # process_patient_folder(dataset_path, save_root_path)
     
     # load_npz_files("./data/dataset/chb01_test_0.2")
 
