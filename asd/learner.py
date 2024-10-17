@@ -122,7 +122,7 @@ class Learner(BaseLearner):
                         print(f"Shape of labels: {true_labels.shape}")  
                 
         
-                loss = self.compute_loss(y_pred=outputs, y_test=true_labels.long())
+                loss = self.compute_loss(y_pred=outputs, y_test=true_labels)
                 test_loss += loss.item()
 
                 if len(outputs.shape) == 1:

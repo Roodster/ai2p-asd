@@ -15,6 +15,7 @@ notebooks/data
 *.pth
 *.pkl
 **/data/models/
+**.pickle
 
 
 # Byte-compiled / optimized / DLL files
