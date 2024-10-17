@@ -1306,7 +1306,7 @@ def process_all_patients(dataset_path, save_root_path):
 
 # This function uses the previous approach, where only data from files with .seizure file are segmented. 
 # Also pipeline is applied per file instead of applying it once when all data is concatenated. 
-def process_seizure_files():
+def process_seizure_files(dataset_path, dataset_save_root_path):
     
     from tqdm import tqdm
     from common.utils import load_edf_filepaths, clean_path, load_eeg_file, save_spectrograms_and_labels, load_seizure_edf_filepaths
@@ -1314,10 +1314,7 @@ def process_seizure_files():
     """
     WARNING: Current code computes features for svm.
     """
-    
-    dataset_path = "./data/dataset/train/raw/temp"
-    dataset_save_root_path = "./data/dataset/test/"
-    
+        
     files_list = load_seizure_edf_filepaths(dataset_path)
     
     pbar = tqdm(files_list)
