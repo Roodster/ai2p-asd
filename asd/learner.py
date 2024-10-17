@@ -150,10 +150,10 @@ class Learner(BaseLearner):
             results.f1s = scores.f1
             print("Added to results:")
             print("-" * 30)  # Creates a separator
-            print(f"False Positive Rate: {results.fp_rates:.4f}")
-            print(f"Precision:           {results.precisions:.4f}")
-            print(f"Sensitivity:         {results.sensitivities:.4f}")
-            print(f"F1 Score:            {results.f1s:.4f}")
+            print(f"False Positive Rate: {results.fp_rates}")
+            print(f"Precision:           {results.precisions}")
+            print(f"Sensitivity:         {results.sensitivities}")
+            print(f"F1 Score:            {results.f1s}")
         else:
             # Calculate overall metrics
             accuracy = accuracy_score(all_labels, all_predictions)
