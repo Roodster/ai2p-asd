@@ -1189,10 +1189,12 @@ def process_patient_folder(patient_folder, save_root):
 
     # Apply the pipeline on the combined data
     pipeline = Pipeline([('filters', BandpassFilter(sfreq=256, lowcut=1, highcut=40, order=6)),
-                         ('normalizes', ZScoreNormalization()),
-                         ('segments', SegmentSignals(fs=256, segment_length=4, overlap=0))
-                        #  ('delete', DropSegments(drop_percentage=0.7))
-                         ]) 
+                    ('normalizes', ZScoreNormalization()),
+                    ('segments', SegmentSignals(fs=256, segment_length=4, overlap=2)),
+                    ('drop', Pre_Post_Drop()),
+                    ('sample', PseudoUniformSampling(drop_percentage=0.8, num_blocks=1000)),
+                    ]) 
+
     X, y = pipeline.transform(X=(combined_eeg_data, combined_labels))
     print(f"Transformed data shape for {os.path.basename(patient_folder)}: {X.shape}")
     print(f"Transformed labels shape for {os.path.basename(patient_folder)}: {y.shape}")
@@ -1255,10 +1257,12 @@ def process_seizure_files():
         eeg_data = eeg_file.data
         labels = eeg_file.get_labels()
         
-        pipeline = Pipeline([
-            ('bandpass', BandpassFilter(sfreq=256, lowcut=1, highcut=40, order=6)),
-            ('segment', Spectrograms(fs=256, nperseg=4, noverlap=0, max_workers=4))
-            ])
+        pipeline = Pipeline([('filters', BandpassFilter(sfreq=256, lowcut=1, highcut=40, order=6)),
+                         ('normalizes', ZScoreNormalization()),
+                         ('segments', SegmentSignals(fs=256, segment_length=4, overlap=2)),
+                         ('drop', Pre_Post_Drop()),
+                         ('sample', PseudoUniformSampling(drop_percentage=0.8, num_blocks=20)),
+                         ]) 
         
         X, y = pipeline.transform((eeg_data, labels))
 
