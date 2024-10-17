@@ -350,3 +350,20 @@ class SSLTransformer(BaseModel):
         p2 = self.encoder2(x2) 
         
         return p1, p2
+    
+    
+    
+if __name__ == "__main__":
+    from pytorch_model_summary import summary
+    from asd.args import Args
+    
+    device = "cuda" if th.cuda.is_available() else "cpu"
+    
+    args = Args("./data/configs/default.yaml")
+    dummy_input = (th.randn(1, 4, 256))  # Replace with your input dimensions
+
+    model = VisionTransformer(args=args)
+        
+    # Print the model summary
+    print(summary(model, th.zeros((1, 1, 4, 256)), show_input=False, show_hierarchical=True))
+    
