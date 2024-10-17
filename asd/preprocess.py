@@ -1116,7 +1116,7 @@ def process_all_patients(dataset_path, save_root_path):
 def process_seizure_files():
     
     from tqdm import tqdm
-    from common.utils import load_edf_filepaths, clean_path, load_eeg_file, save_spectrograms_and_labels
+    from common.utils import load_edf_filepaths, clean_path, load_eeg_file, save_spectrograms_and_labels, load_seizure_edf_filepaths
     
     """
     WARNING: Current code computes features for svm.
