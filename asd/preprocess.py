@@ -866,6 +866,120 @@ class BalanceSeizureSegments(BaseEstimator, TransformerMixin):
         labels = np.array([label for _, label in balanced_segments])
     
         return (segments, labels) 
+
+class Pre_Post_Drop(BaseEstimator, TransformerMixin):
+    def __init__(self, segment_length=4, overlap=2, random_state=None):
+        self.random_state=random_state
+        self.segment_length = segment_length
+        self.overlap = overlap
+
+    def fit(self, X, y=None):
+        # No fitting necessary for this transformer, so just return self
+        return self
+    
+    def transform(self, X, y=None):
+        if self.random_state is not None:
+            rnd.seed(self.random_state)
+
+        X, y = X
+        indices_to_remove = [] # We keep track of which indices of X need to be removed and only remove them all at once after, in order to prevent end-of-list issues with the next for-loop
+        
+        for i in range(1, len(y)):
+            if y[i]== 1 and y[i-1] == 0: # Check if i-th segment is the start of a seizure
+
+                indices_to_remove.extend([i-j for j in range(1, int(self.overlap * (60 / self.segment_length)) + 1)])
+
+            elif y[i] == 1 and y[i+1] == 0: # Check if i-th segment is end of seizure
+
+                indices_to_remove.extend([i+j for j in range(1, int(self.overlap * (60 / self.segment_length)) + 1)])
+            else:
+                continue
+
+            
+        #Now we actually remove the segments flagged earlier
+        X = np.delete(X, indices_to_remove)
+        y = np.delete(y, indices_to_remove)
+
+        return X, y
+
+
+class PseudoUniformSampling(BaseEstimator, TransformerMixin):
+    def __init__(self, drop_percentage=0.8, num_blocks=1000):
+        """
+        Custom sklearn transformer that randomly drops a percentage of data. The data it does not drop is evenly distributed in time.
+        
+        Parameters:
+        drop_percentage (float): The percentage of data to drop (0 < drop_percentage < 1).
+        """
+        self.drop_percentage = drop_percentage
+        self.num_blocks = num_blocks
+
+    def fit(self, X, y=None):
+        # No fitting necessary for this transformer, so just return self
+        return self
+    
+    def transform(self, X):
+        """
+        Randomly drop a percentage of the data, accounting for the fact that the number of left over data per hour should be equal for every hour.
+
+        Parameters:
+        X (tuple): Tuple containing:
+            - X (numpy.ndarray): Data array with shape (N, C, F).
+            - y (numpy.ndarray): Labels array with shape (N,).
+
+        Returns:
+        tuple: Tuple containing:
+            - X (numpy.ndarray): Reduced data array.
+            - y (numpy.ndarray): Corresponding reduced labels.
+        """
+        print("Starting normalization and dropping segments.")
+        
+
+        X, y = X
+        # Ensure data is of type float32 for precision
+        X = X.astype(np.float32)
+
+        z = list(range(len(y)))
+
+        X = list(zip(X, y, z))
+
+        seizure_segments = np.array([segment for segment in X if segment[1] == 1], dtype = object)
+        non_seizure_segments = np.array([segment for segment in X if segment[1] == 0], dtype = object)
+
+        # Useful constants
+        retain_percentage = 1 - self.drop_percentage
+        num_retain = int(len(non_seizure_segments) * retain_percentage) 
+        jump = len(non_seizure_segments) // self.num_blocks
+
+        # Randomly select indices to retain in each block
+        retain_indices = []
+        for i in range(self.num_blocks - 1): 
+            start = i * jump
+            end = (i + 1) * jump
+        
+            to_sample_from = np.arange(start, end)
+
+            if len(to_sample_from) > 0:
+                selected_indices = np.random.choice(to_sample_from, 
+                                                 size = num_retain // self.num_blocks, 
+                                                 replace=False)
+            
+                retain_indices.extend(selected_indices)
+        
+        # Sort the indices to maintain order (optional)
+        retain_indices.sort() 
+        
+        retain_indices = np.array(retain_indices)
+        # Select the retained samples
+        retained_non_seizure_segments = list(non_seizure_segments[retain_indices]) #Change to list to use extend later
+
+        retained_non_seizure_segments.extend(seizure_segments)
+        _ = retained_non_seizure_segments
+        X = sorted(_, key = lambda x: x[2])
+
+        X_reduced, y_reduced, z_reduced = list(zip(*X))
+
+        return np.array(X_reduced), np.array(y_reduced)
     
     
 def process_batch(batch: np.ndarray, y_batch: np.ndarray):
