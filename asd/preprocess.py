@@ -902,7 +902,7 @@ class Pre_Post_Drop(BaseEstimator, TransformerMixin):
 
         return X, y
 
-class RatioRatioPseudoUniformSampling(BaseEstimator, TransformerMixin):
+class RatioPseudoUniformSampling(BaseEstimator, TransformerMixin):
     def __init__(self, ratio = 2.0, num_blocks=1000):
         """
         Custom sklearn transformer that randomly drops a percentage of data. The data it does not drop is evenly distributed in time.
