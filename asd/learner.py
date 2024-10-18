@@ -140,8 +140,8 @@ class Learner(BaseLearner):
           
         if(self.event_scoring):
             scores = EventScoring(all_labels, all_predictions)
-            ref = Annotation(all_labels, fs=256)
-            hyp = Annotation(all_predictions, fs=256)
+            ref = Annotation(all_labels, fs=self.args.eval_sample_rate)
+            hyp = Annotation(all_predictions, fs=self.args.eval_sample_rate)
             plotEventScoring(ref, hyp)
             # plotIndividualEvents(ref, hyp)
             results.fp_rates = scores.fpRate

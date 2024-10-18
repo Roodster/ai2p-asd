@@ -21,3 +21,4 @@ n_epochs: 3
 
 eval_save_model_interval: 1
 eval_interval: 1
+eval_sample_rate: 1 # eval sampling rate is number of labels per second.

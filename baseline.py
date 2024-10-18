@@ -94,8 +94,8 @@ if __name__ == "__main__":
     args = Args(file="./data/configs/default.yaml")
     set_seed(42)
 
-    process_patient(16, model_path="D:\\tudelft\\ai2p-asd\logs\svm_results\svm_patientid_16.pkl")
-    process_patient(18, model_path="D:\\tudelft\\ai2p-asd\logs\svm_results\svm_patientid_18.pkl")
+    process_patient(1, model_path="D:\\tudelft\\ai2p-asd\logs\svm_results\svm_patientid_1.pkl")
+    # process_patient(18, model_path="D:\\tudelft\\ai2p-asd\logs\svm_results\svm_patientid_18.pkl")
 
     # patient_ids = list(range(9,10))
     # metrics = [None] * len(patient_ids)
