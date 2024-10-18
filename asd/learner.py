@@ -5,10 +5,11 @@ import numpy as np
 
 from torch.autograd import Variable
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support, roc_auc_score
+from asd.event_scoring.annotation import Annotation
+from asd.event_scoring.scoring import EventScoring
+from asd.event_scoring.visualizations import plotEventScoring, plotIndividualEvents
 
 class BaseLearner:
-    
-    
     def __init__(self, 
                  args=None, 
                  model=None, 
@@ -42,14 +43,15 @@ class BaseLearner:
         return loss
     
 class Learner(BaseLearner):
-
+    mistakes = []
 
     def __init__(self, 
                  args=None, 
                  model=None, 
                  optimizer=None,
                  criterion=None,
-                 label_transformer=None                 
+                 label_transformer=None,
+                 event_scoring=False
                  ):
         
         assert args is not None, "No args defined."
@@ -61,7 +63,8 @@ class Learner(BaseLearner):
 
         # ===== DEPENDENCIES =====
         self.label_transformer = label_transformer
-                
+        self.event_scoring = event_scoring
+        
     def step(self, data_loader, results, verbose=False):
         self.model.train()
         train_loss = .0
@@ -82,10 +85,12 @@ class Learner(BaseLearner):
                 batch_labels = self.label_transformer(batch_labels)
                 if verbose:
                     print(f"Shape of labels: {batch_labels.shape}")        
-        
-            loss = self.compute_loss(y_pred=outputs, y_test=batch_labels)    
+
+                    
+            loss = self.compute_loss(y_pred=outputs, y_test=batch_labels.long())    
             self.update(loss=loss)
             train_loss += loss.item()
+
         results.train_losses = train_loss / len(data_loader)
         return results
     
@@ -132,23 +137,28 @@ class Learner(BaseLearner):
                     
                 all_labels.extend(batch_labels.cpu().numpy())
                 all_predictions.extend(outputs.cpu().numpy())
-
-        if verbose:
-            print(f'Predictions: \n {all_predictions}')
-            print(f'Labels: \n {all_labels}')
-                    
-        # Calculate overall metrics
-        accuracy = accuracy_score(all_labels, all_predictions)
-        auc = roc_auc_score(all_labels, all_predictions, average='macro')
-        overall_precision, overall_recall, overall_f1, _ = precision_recall_fscore_support(all_labels, all_predictions, average='macro')
-
-        # Sum up the values for all classes
-        results.aucs = auc
-        results.precisions = overall_precision
-        results.sensitivities = overall_recall
-        results.f1s = overall_f1
-        results.accuracies = accuracy
-
+          
+        if(self.event_scoring):
+            scores = EventScoring(all_labels, all_predictions)
+            ref = Annotation(all_labels, fs=self.args.eval_sample_rate)
+            hyp = Annotation(all_predictions, fs=self.args.eval_sample_rate)
+            plotEventScoring(ref, hyp)
+            # plotIndividualEvents(ref, hyp)
+            results.fp_rates = scores.fpRate
+            results.precisions = scores.precision
+            results.sensitivities = scores.sensitivity
+            results.f1s = scores.f1
+        else:
+            # Calculate overall metrics
+            accuracy = accuracy_score(all_labels, all_predictions)
+            auc = roc_auc_score(all_labels, all_predictions, average='macro')
+            overall_precision, overall_recall, overall_f1, _ = precision_recall_fscore_support(all_labels, all_predictions, average='macro')
+            results.aucs = auc
+            results.precisions = overall_precision
+            results.sensitivities = overall_recall
+            results.f1s = overall_f1
+            results.accuracies = accuracy
+    
         results.test_losses = test_loss / len(dataloader)
         return results
     

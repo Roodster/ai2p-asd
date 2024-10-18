@@ -4,7 +4,6 @@ import seaborn as sns
 
 class Plots:
     
-    
     def __init__(self):
         pass
     
@@ -110,4 +109,73 @@ class Plots:
             plt.imshow(attn, cmap='viridis')
             plt.title(f"Aggregated Attention Map - Layer {layer_idx} ({mode})")
             plt.colorbar()
+            plt.show()
+            
+            
+
+class EventPlots:
+    
+    def __init__(self):
+        pass
+    
+    def plot(self, results, update=True):
+        """Plots logged training results including performance metrics, FP/day, and losses.
+           Use 'update=True' if the plot is continuously updated
+           or use 'update=False' if this is the final call (to avoid double plotting)."""
+        # Smooth curves
+        window = max(int(len(results.epochs) // 10), 1)
+        
+        if len(results.epochs) < 2: return
+        
+        # Smooth the data for plotting
+        epochs = np.convolve(results.epochs, np.ones(window)/window, 'valid')
+        train_losses = np.convolve(results.train_losses, np.ones(window)/window, 'valid')
+        test_losses = np.convolve(results.test_losses, np.ones(window)/window, 'valid')
+        precisions = np.convolve(results.precisions, np.ones(window)/window, 'valid')
+        sensitivities = np.convolve(results.sensitivities, np.ones(window)/window, 'valid')
+        f1s = np.convolve(results.f1s, np.ones(window)/window, 'valid')
+        fp_rates = np.convolve(results.fp_rates, np.ones(window)/window, 'valid')
+        
+        # Set up a plot with three subplots
+        n_plots = 3
+        fig = plt.gcf()
+        fig.set_size_inches(16, 8)
+        
+        # Choose a color palette
+        palette = sns.color_palette("colorblind", n_colors=3)
+        
+        plt.clf()
+
+        # Plot the losses in the first subplot
+        plt.subplot(1, n_plots, 1)
+        plt.title("Train/Test Loss")
+        plt.plot(epochs, train_losses, color=palette[0], label='train')
+        plt.plot(epochs, test_losses, color=palette[1], label='test')
+        plt.legend()
+        plt.xlabel('Epochs')
+        plt.ylabel('Loss')
+
+        # Plot precision, sensitivity, and F1 score in the second subplot
+        plt.subplot(1, n_plots, 2)
+        plt.title("Performance Metrics")
+        plt.plot(epochs, precisions, color=palette[0], label='precision')
+        plt.plot(epochs, sensitivities, color=palette[1], label='sensitivity')
+        plt.plot(epochs, f1s, color=palette[2], label='f1-measure')
+        plt.legend()
+        plt.xlabel('Epochs')
+        plt.ylabel('Metrics')
+
+        # Plot FP/day in the third subplot
+        plt.subplot(1, n_plots, 3)
+        plt.title("False Positive Rate (FP/day)")
+        plt.plot(epochs, fp_rates, color='red', label='FP/day', linestyle='--')  # FP/day with dashed line
+        plt.legend()
+        plt.xlabel('Epochs')
+        plt.ylabel('FP/day')
+
+        # Display the plot
+        if update:
+            plt.pause(1e-3)
+        else:
+            # Save or show the final figure
             plt.show()
