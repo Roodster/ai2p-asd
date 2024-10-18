@@ -866,7 +866,197 @@ class BalanceSeizureSegments(BaseEstimator, TransformerMixin):
         labels = np.array([label for _, label in balanced_segments])
     
         return (segments, labels) 
+
+
+class Pre_Post_Drop(BaseEstimator, TransformerMixin):
+    def __init__(self, segment_length=4, overlap=2, random_state=None):
+        self.random_state=random_state
+        self.segment_length = segment_length
+        self.overlap = overlap
+
+    def fit(self, X, y=None):
+        # No fitting necessary for this transformer, so just return self
+        return self
     
+    def transform(self, X, y=None):
+        if self.random_state is not None:
+            rnd.seed(self.random_state)
+
+        X, y = X
+        indices_to_remove = [] # We keep track of which indices of X need to be removed and only remove them all at once after, in order to prevent end-of-list issues with the next for-loop
+        
+        for i in range(1, len(y)):
+            if y[i]== 1 and y[i-1] == 0: # Check if i-th segment is the start of a seizure
+
+                indices_to_remove.extend([i-j for j in range(1, int(self.overlap * (60 / self.segment_length)) + 1)])
+
+            elif y[i] == 1 and y[i+1] == 0: # Check if i-th segment is end of seizure
+
+                indices_to_remove.extend([i+j for j in range(1, int(self.overlap * (60 / self.segment_length)) + 1)])
+            else:
+                continue
+
+            
+        #Now we actually remove the segments flagged earlier
+        X = np.delete(X, indices_to_remove)
+        y = np.delete(y, indices_to_remove)
+
+        return X, y
+
+class RatioPseudoUniformSampling(BaseEstimator, TransformerMixin):
+    def __init__(self, ratio = 2.0, num_blocks=1000):
+        """
+        Custom sklearn transformer that randomly drops a percentage of data. The data it does not drop is evenly distributed in time.
+        
+        Parameters:
+        drop_percentage (float): The percentage of data to drop (0 < drop_percentage < 1).
+        """
+        self.ratio = ratio
+        self.num_blocks = num_blocks
+
+    def fit(self, X, y=None):
+        # No fitting necessary for this transformer, so just return self
+        return self
+    
+    def transform(self, X):
+        """
+        Randomly drop a percentage of the data, accounting for the fact that the number of left over data per hour should be equal for every hour.
+
+        Parameters:
+        X (tuple): Tuple containing:
+            - X (numpy.ndarray): Data array with shape (N, C, F).
+            - y (numpy.ndarray): Labels array with shape (N,).
+
+        Returns:
+        tuple: Tuple containing:
+            - X (numpy.ndarray): Reduced data array.
+            - y (numpy.ndarray): Corresponding reduced labels.
+        """
+        print("Starting normalization and dropping segments.")
+        
+
+        X, y = X
+        # Ensure data is of type float32 for precision
+        X = X.astype(np.float32)
+
+        z = list(range(len(y)))
+
+        X = list(zip(X, y, z))
+
+        seizure_segments = np.array([segment for segment in X if segment[1] == 1], dtype = object)
+        non_seizure_segments = np.array([segment for segment in X if segment[1] == 0], dtype = object)
+
+        # Useful constants
+        num_retain = int(len(seizure_segments)*self.ratio)
+        jump = len(non_seizure_segments) // self.num_blocks
+
+        # Randomly select indices to retain in each block
+        retain_indices = []
+        for i in range(self.num_blocks - 1): 
+            start = i * jump
+            end = (i + 1) * jump
+        
+            to_sample_from = np.arange(start, end)
+
+            if len(to_sample_from) > 0:
+                selected_indices = np.random.choice(to_sample_from, 
+                                                 size = num_retain // self.num_blocks, 
+                                                 replace=False)
+            
+                retain_indices.extend(selected_indices)
+        
+        # Sort the indices to maintain order (optional)
+        retain_indices.sort() 
+        
+        retain_indices = np.array(retain_indices, dtype = int)
+        # Select the retained samples
+        retained_non_seizure_segments = list(non_seizure_segments[retain_indices]) #Change to list to use extend later
+
+        retained_non_seizure_segments.extend(seizure_segments)
+        _ = retained_non_seizure_segments
+        X = sorted(_, key = lambda x: x[2])
+
+        X_reduced, y_reduced, z_reduced = list(zip(*X))
+
+        return np.array(X_reduced), np.array(y_reduced)
+
+class PercentagePseudoUniformSampling(BaseEstimator, TransformerMixin):
+    def __init__(self, drop_percentage=0.8, num_blocks=1000):
+        """
+        Custom sklearn transformer that randomly drops a percentage of data. The data it does not drop is evenly distributed in time.
+        
+        Parameters:
+        drop_percentage (float): The percentage of data to drop (0 < drop_percentage < 1).
+        """
+        self.drop_percentage = drop_percentage
+        self.num_blocks = num_blocks
+
+    def fit(self, X, y=None):
+        # No fitting necessary for this transformer, so just return self
+        return self
+    
+    def transform(self, X):
+        """
+        Randomly drop a percentage of the data, accounting for the fact that the number of left over data per hour should be equal for every hour.
+
+        Parameters:
+        X (tuple): Tuple containing:
+            - X (numpy.ndarray): Data array with shape (N, C, F).
+            - y (numpy.ndarray): Labels array with shape (N,).
+
+        Returns:
+        tuple: Tuple containing:
+            - X (numpy.ndarray): Reduced data array.
+            - y (numpy.ndarray): Corresponding reduced labels.
+        """
+        print("Starting normalization and dropping segments.")
+        
+
+        X, y = X
+        # Ensure data is of type float32 for precision
+        X = X.astype(np.float32)
+
+        z = list(range(len(y)))
+
+        X = list(zip(X, y, z))
+
+        seizure_segments = np.array([segment for segment in X if segment[1] == 1], dtype = object)
+        non_seizure_segments = np.array([segment for segment in X if segment[1] == 0], dtype = object)
+
+        # Useful constants
+        retain_percentage = 1 - self.drop_percentage
+        num_retain = int(len(non_seizure_segments) * retain_percentage) 
+        jump = len(non_seizure_segments) // self.num_blocks
+
+        # Randomly select indices to retain in each block
+        retain_indices = []
+        for i in range(self.num_blocks - 1): 
+            start = i * jump
+            end = (i + 1) * jump
+        
+            to_sample_from = np.arange(start, end)
+
+            if len(to_sample_from) > 0:
+                selected_indices = np.random.choice(to_sample_from, 
+                                                 size = num_retain // self.num_blocks, 
+                                                 replace=False)
+            
+                retain_indices.extend(selected_indices)
+        
+        # Sort the indices to maintain order (optional)
+        retain_indices.sort() 
+        
+        retain_indices = np.array(retain_indices)
+        # Select the retained samples
+        retained_non_seizure_segments = list(non_seizure_segments[retain_indices]) #Change to list to use extend later
+
+        retained_non_seizure_segments.extend(seizure_segments)
+        _ = retained_non_seizure_segments
+        X = sorted(_, key = lambda x: x[2])
+
+        X_reduced, y_reduced, z_reduced = list(zip(*X))
+
+        return np.array(X_reduced), np.array(y_reduced)
     
 def process_batch(batch: np.ndarray, y_batch: np.ndarray):
     """
@@ -1032,8 +1222,6 @@ def plot_channel_scatter(data, channel_idx, label):
     plt.grid(True)
     plt.show()
 
-
-
 def process_patient_folder(patient_folder, save_root):
     """
     Process all .edf files in a patient's folder, concatenate the data, and apply the pipeline.
@@ -1049,6 +1237,7 @@ def process_patient_folder(patient_folder, save_root):
     
     pbar = tqdm(files_list)
     for file in pbar: 
+        print(file)
         # pbar.set_description(f"current file {file}")
 
         # channels="FZ-CZ;CZ-PZ;F8-T8;P4-O2;FP2-F8;F4-C4;C4-P4;P3-O1;FP2-F4;F3-C3;C3-P3;P7-O1;FP1-F3;F7-T7;T7-P7;FP1-F7"
@@ -1076,9 +1265,11 @@ def process_patient_folder(patient_folder, save_root):
     # Apply the pipeline on the combined data
     pipeline = Pipeline([('filters', BandpassFilter(sfreq=256, lowcut=1, highcut=40, order=6)),
                          ('normalizes', ZScoreNormalization()),
-                         ('segments', SegmentSignals(fs=256, segment_length=4, overlap=0))
-                        #  ('delete', DropSegments(drop_percentage=0.7))
+                         ('segments', SegmentSignals(fs=256, segment_length=4, overlap=2)),
+                         ('drop', Pre_Post_Drop()),
+                         ('sample', RatioPseudoUniformSampling(ratio=2, num_blocks=1000)),
                          ]) 
+
     X, y = pipeline.transform(X=(combined_eeg_data, combined_labels))
     print(f"Transformed data shape for {os.path.basename(patient_folder)}: {X.shape}")
     print(f"Transformed labels shape for {os.path.basename(patient_folder)}: {y.shape}")
@@ -1095,7 +1286,7 @@ def process_patient_folder(patient_folder, save_root):
 
 
 
-def process_all_patients(dataset_path, save_root_path):
+def process_all_patients(dataset_path, save_root_path, patient_exclude):
     """
     Process all patient folders in the dataset.
     :param dataset_path: Path to the root folder containing patient folders (e.g., ./data/dataset/train/raw/)
@@ -1104,6 +1295,7 @@ def process_all_patients(dataset_path, save_root_path):
     # Loop through all folders in the dataset path (assuming each folder is a patient)
     for patient_folder in os.listdir(dataset_path):
         full_patient_path = os.path.join(dataset_path, patient_folder)
+        print('FILE NAME', full_patient_path)
         if os.path.isdir(full_patient_path):  # Only process directories (patient folders)
             process_patient_folder(full_patient_path, save_root_path)
 
@@ -1113,18 +1305,15 @@ def process_all_patients(dataset_path, save_root_path):
 
 # This function uses the previous approach, where only data from files with .seizure file are segmented. 
 # Also pipeline is applied per file instead of applying it once when all data is concatenated. 
-def process_seizure_files():
+def process_seizure_files(dataset_path, dataset_save_root_path):
     
     from tqdm import tqdm
-    from common.utils import load_edf_filepaths, clean_path, load_eeg_file, save_spectrograms_and_labels
+    from common.utils import load_edf_filepaths, clean_path, load_eeg_file, save_spectrograms_and_labels, load_seizure_edf_filepaths
     
     """
     WARNING: Current code computes features for svm.
     """
-    
-    dataset_path = "./data/dataset/train/raw/temp"
-    dataset_save_root_path = "./data/dataset/test/"
-    
+
     files_list = load_seizure_edf_filepaths(dataset_path)
     
     pbar = tqdm(files_list)
@@ -1141,10 +1330,12 @@ def process_seizure_files():
         eeg_data = eeg_file.data
         labels = eeg_file.get_labels()
         
-        pipeline = Pipeline([
-            ('bandpass', BandpassFilter(sfreq=256, lowcut=1, highcut=40, order=6)),
-            ('segment', Spectrograms(fs=256, nperseg=4, noverlap=0, max_workers=4))
-            ])
+        pipeline = Pipeline([('filters', BandpassFilter(sfreq=256, lowcut=1, highcut=40, order=6)),
+                         ('normalizes', ZScoreNormalization()),
+                         ('segments', SegmentSignals(fs=256, segment_length=4, overlap=2)),
+                         ('drop', Pre_Post_Drop()),
+                         ('sample', RatioPseudoUniformSampling(ratio=2, num_blocks=20)),
+                         ]) 
         
         X, y = pipeline.transform((eeg_data, labels))
 
@@ -1154,20 +1345,40 @@ def process_seizure_files():
         pbar.set_description(f"saved {filename} of size: {X.shape} to {save_dir}")
             
         save_spectrograms_and_labels(X, y, save_dir=save_dir, filename=filename)
+
+def process_all_seizure_files(dataset_path, dataset_save_root_path):
+    # Loop through all folders in the dataset path (assuming each folder is a patient)
+    for patient_folder in os.listdir(dataset_path):
+        full_patient_path = os.path.join(dataset_path, patient_folder)
+        if os.path.isdir(full_patient_path):  # Only process directories (patient folders)
+            process_seizure_files(full_patient_path, dataset_save_root_path)
     
 
 if __name__ == "__main__":
-    dataset_path = "./data/dataset/train/raw/minichb01"
-    save_root_path = "./data/dataset/chb01_test_smoteee"
+    dataset_path_full_chb11 = "./data/dataset/raw/full/chb11"
+    dataset_path_exclude_chb11 = "./data/dataset/raw/exclude_chb01/chb11"
 
+    dataset_path_full = "./data/dataset/raw/full"
+    dataset_path_exclude = "./data/dataset/raw/exclude_chb01"
+
+    save_root_path = "./data/dataset/ivan_train/exclude_chb01"
+
+    #print(f"Files in dataset_path_full: {load_edf_filepaths(dataset_path_full)}")
+    #print(f"Files in dataset_path_exclude: {load_edf_filepaths(dataset_path_exclude)}")
+
+    
     # If you want to use the previous dataset creation approach, use this:
-    # process_seizure_files()
+    #process_seizure_files(dataset_path, save_root_path)
+
+    # If you want to process all directories using previous dataset creation approach    
+    #process_all_seizure_files(dataset_path, save_root_path)
 
     # If you want to process all directories
-    # process_all_patients(dataset_path, save_root_path)
+    process_all_patients(dataset_path_exclude, save_root_path, 1)
     
     # If you want to process a single patient (for test set), use this
-    process_patient_folder(dataset_path, save_root_path)
+    #process_patient_folder(dataset_path_full_chb11, save_root_path)
+    #process_patient_folder(dataset_path_exclude_chb11, save_root_path)
     
     # load_npz_files("./data/dataset/chb01_test_0.2")
 

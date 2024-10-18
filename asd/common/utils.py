@@ -80,7 +80,6 @@ def load_eeg_file(file, channels="F7-T7;T7-P7;F8-T8;T8-P8"):
         eeg_file = sdp.EEG(file, channels=channels)
     except:
         eeg_file = None
-    
     return eeg_file
 
 
