@@ -67,7 +67,7 @@ class EventScoring(_Scoring):
                      minOverlap: float = 0,
                      maxEventDuration: float = 5 * 60,
                      minDurationBetweenEvents: float = 8,
-                     sampling_rate: int =256
+                     sampling_rate: int = 1
                      ):
             """Parameters for event scoring
 
