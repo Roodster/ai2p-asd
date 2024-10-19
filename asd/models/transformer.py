@@ -328,13 +328,13 @@ class CutRearrange(BaseModel):
 
 class SSLTransformer(BaseModel):
     
-    def __init__(self, args, img_size=(4, 256), num_classes=2, patch_sizes=(4,4), in_channels=1, n_encoders=1, zero_head=False, n_segments=8):
+    def __init__(self, args, img_size=(4, 256), num_classes=2, patch_sizes=(4,4), in_channels=1, n_encoders=1, has_head=True, n_segments=8):
         super().__init__(args=args)    
         self.gaussian_noise = GaussianNoise(args=args, img_size=img_size)
         self.cut_rearrange = CutRearrange(args=args, n_segments=n_segments)
         
-        self.encoder1 = VisionTransformer(args=args, img_size=img_size, num_classes=num_classes, patch_sizes=patch_sizes, in_channels=in_channels, n_encoders=n_encoders, zero_head=zero_head)
-        self.encoder2 = VisionTransformer(args=args, img_size=img_size, num_classes=num_classes, patch_sizes=patch_sizes, in_channels=in_channels, n_encoders=n_encoders, zero_head=zero_head)
+        self.encoder1 = VisionTransformer(args=args, img_size=img_size, num_classes=num_classes, patch_sizes=patch_sizes, in_channels=in_channels, n_encoders=n_encoders, has_head=has_head)
+        self.encoder2 = VisionTransformer(args=args, img_size=img_size, num_classes=num_classes, patch_sizes=patch_sizes, in_channels=in_channels, n_encoders=n_encoders, has_head=has_head)
         
     def forward(self, x):
 
