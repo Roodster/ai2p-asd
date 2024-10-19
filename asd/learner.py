@@ -87,7 +87,7 @@ class Learner(BaseLearner):
                     print(f"Shape of labels: {batch_labels.shape}")        
 
                     
-            loss = self.compute_loss(y_pred=outputs, y_test=batch_labels.long())    
+            loss = self.compute_loss(y_pred=outputs, y_test=batch_labels)    
             self.update(loss=loss)
             train_loss += loss.item()
 
