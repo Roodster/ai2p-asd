@@ -2,3 +2,4 @@ from asd.models.autoencoder import BetaDecoder, BetaEncoder, BetaVAE, SoftMaxCla
 from asd.models.transformer import VisionTransformer, SSLTransformer, CutRearrange, VisualAttentionModel
 from asd.models.model import CNNBiLSTM, Model
 from asd.models.DARLNet import DARLNet, DifferenceLayer, ResidualBlock
+from asd.models.base import BaseModel, DetectionModel
