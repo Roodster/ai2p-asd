@@ -267,32 +267,27 @@ class Transformer(BaseModel):
 
 
 class VisionTransformer(BaseModel):
-    def __init__(self, args, img_size=(4, 256), num_classes=2, patch_sizes=(4,4), in_channels=1, n_encoders=1, zero_head=False, has_sigmoid=False):
+    def __init__(self, args, img_size=(4, 256), num_classes=2, patch_sizes=(4,4), in_channels=1, n_encoders=1, has_head=True):
         super(VisionTransformer, self).__init__(args=args)
         self.num_classes = num_classes
-        self.zero_head = zero_head
+        self.has_head = has_head
 
         self.transformer = Transformer(args, img_size=img_size, patch_sizes=patch_sizes, in_channels=in_channels, n_encoders=n_encoders).to(self.device)
         self.head = Linear(256, num_classes).to(self.device)
-        
-        self.has_sigmoid = has_sigmoid
-        if self.has_sigmoid:
-            self.sigmoid = nn.Sigmoid() 
+                        
 
     def forward(self, x):
         x = x.to(self.device)
         # print(f"VisionTransformer {x.shape}")
         x = self.transformer(x)
         # print(f"VisionTransformer transformer {x.shape}")
-        logits = self.head(x[:, 0])
-        # print(f"VisionTransformer logits {logits.shape}")
         
-        if self.has_sigmoid:
-            logits = self.sigmoid(logits)
-            
-        return logits
-
-
+        if self.has_head:
+            logits = self.head(x[:, 0])
+            return logits
+        else:
+            return x
+        # print(f"VisionTransformer logits {logits.shape}")
 
 
 class GaussianNoise(BaseModel):
