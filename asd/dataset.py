@@ -161,7 +161,7 @@ class OfflineSegmentsDataset(Dataset):
         pbar = tqdm(self.file_list)
         pbar.set_description("Loading dataset...")
         for file_path in pbar:
-            npz_file = np.load(file_path)
+            npz_file = np.load(file_path, allow_pickle=True)
             segment = torch.from_numpy(npz_file['x'].astype(np.float32))
                         
             if len(segment.shape)== 2:

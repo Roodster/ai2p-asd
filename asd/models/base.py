@@ -11,7 +11,7 @@ class BaseModel(nn.Module):
 class DetectionModel(BaseModel):
 
     def __init__(self, args, layers):
-        super(DetectionModel).__init__(args=args)
+        super(DetectionModel, self).__init__(args=args)
         
         if not isinstance(layers, list):
             layers = [layers]
