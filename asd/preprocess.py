@@ -1240,13 +1240,13 @@ def process_patient_folder(patient_folder, save_root):
     for file in pbar: 
         # pbar.set_description(f"current file {file}")
         
-        # Check if a corresponding .edf.seizures file exists
-        seizure_file = filename + '.seizures'
-        if i == 0:
-            if os.path.exists(seizure_file):
-                edf_files.append(r'{}'.format(filename))
-                i += 1
-                continue
+        # Check if a corresponding .edf.seizures file exists, only do this if we use a validation set
+        #seizure_file = filename + '.seizures'
+        #if i == 0:
+        #    if os.path.exists(seizure_file):
+        #        edf_files.append(r'{}'.format(filename))
+        #        i += 1
+        #        continue
 
         # channels="FZ-CZ;CZ-PZ;F8-T8;P4-O2;FP2-F8;F4-C4;C4-P4;P3-O1;FP2-F4;F3-C3;C3-P3;P7-O1;FP1-F3;F7-T7;T7-P7;FP1-F7"
         eeg_file = load_eeg_file(file)
@@ -1304,12 +1304,6 @@ def process_all_patients(dataset_path, save_root_path, patient_exclude):
     for patient_folder in os.listdir(dataset_path):
         full_patient_path = os.path.join(dataset_path, patient_folder)
         if os.path.isdir(full_patient_path):  # Only process directories (patient folders)
-            patient_suffix = patient_folder[-2:] 
-            
-            if patient_suffix == patient_exclude:
-                print(f"Skipping patient {patient_folder} (excluded based on suffix: {patient_suffix})")
-                continue
-            
             process_patient_folder(full_patient_path, save_root_path)
 
     
