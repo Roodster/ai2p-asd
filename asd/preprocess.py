@@ -18,6 +18,42 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 from common.utils import load_edf_filepaths, clean_path, load_eeg_file, save_spectrograms_and_labels, save_signals_and_labels
 
+class MeanDownSampling(BaseEstimator, TransformerMixin):
+    """
+    Returns (new_X: downsampled eeg-data, new_y: downsamples labels (obtained through majority vote))
+    """
+    def __init__(self, down_freq = 64, sfreq=256):
+        self.down_freq = down_freq
+        self.sfreq = sfreq
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X):
+        X, y = X
+
+        step = int(self.sfreq / self.down_freq)
+
+        num_channels, num_samples = X.shape
+
+        new_X = np.zeros(shape = (num_channels, int(num_samples / step)))
+        new_y = np.zeros(shape = (int(num_samples / step)))
+
+        #Downsample values of X, the eeg-data
+        for i in range(num_channels): #For each channel
+            for j in range(int(num_samples / step)):
+                averaged_val = np.sum(X[i][j * step : (j+1) * step]) / step
+                new_X[i][j] = averaged_val
+        
+        #Downsample the values of y, the labels. This is done through majority vote, where a tie means it is labeled as a seizure
+        for i in range(int(num_samples / step)):
+            sum_y = np.sum(y[i * step: (i+1) * step])
+
+            if sum_y <= 1:
+                new_y[i] = 0
+            else:
+                new_y[i] = 1
+        return (new_X, new_y)
 
 class BandpassFilter(BaseEstimator, TransformerMixin):
     def __init__(self, sfreq=256, lowcut=0, highcut=128, order=6):
@@ -1272,6 +1308,7 @@ def process_patient_folder(patient_folder, save_root):
 
     # Apply the pipeline on the combined data
     pipeline = Pipeline([('filters', BandpassFilter(sfreq=256, lowcut=1, highcut=40, order=6)),
+                         ('Downsamples', MeanDownSampling(down_freq = 64, s_freq = 256)),
                          ('normalizes', ZScoreNormalization()),
                          ('segments', SegmentSignals(fs=256, segment_length=4, overlap=2)),
                          ('drop', Pre_Post_Drop()),
@@ -1338,6 +1375,7 @@ def process_seizure_files(dataset_path, dataset_save_root_path):
         labels = eeg_file.get_labels()
         
         pipeline = Pipeline([('filters', BandpassFilter(sfreq=256, lowcut=1, highcut=40, order=6)),
+                             ('Downsamples', MeanDownSampling(down_freq = 64, sfreq = 256)),
                          ('normalizes', ZScoreNormalization()),
                          ('segments', SegmentSignals(fs=256, segment_length=4, overlap=2)),
                          ('drop', Pre_Post_Drop()),
