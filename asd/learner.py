@@ -139,7 +139,7 @@ class Learner(BaseLearner):
                 all_predictions.extend(outputs.cpu().numpy())
           
         if(self.event_scoring):
-            scores = EventScoring(all_labels, all_predictions)
+            scores = EventScoring(all_labels, all_predictions, fs=self.args.eval_sample_rate)
             ref = Annotation(all_labels, fs=self.args.eval_sample_rate)
             hyp = Annotation(all_predictions, fs=self.args.eval_sample_rate)
             plotEventScoring(ref, hyp)
