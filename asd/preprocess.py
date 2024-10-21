@@ -292,7 +292,7 @@ class ZScoreNormalization(BaseEstimator, TransformerMixin):
         
         # Compute mean and standard deviation along the channels axis
         mean = np.mean(X, axis=1, keepdims=True)
-        std = np.std(X, axis=1, keepdims=True)
+        std = np.std(X, axis=1, ddof = 1, keepdims=True)
         
         # Perform z-score normalization
         normalized_data = (X - mean) / std
