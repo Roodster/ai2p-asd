@@ -169,6 +169,7 @@ class Learner(BaseLearner):
         return results
     
     
+
 class DARLNetLearner(BaseLearner):
     mistakes = []
 
@@ -295,7 +296,6 @@ class DARLNetLearner(BaseLearner):
         results.test_losses = test_loss / len(dataloader)
         return results
     
-
 
 class AELearner(Learner):
 

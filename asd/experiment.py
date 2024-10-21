@@ -117,7 +117,7 @@ class Experiment:
 
         # After all predictions are calculated, proceed with the evaluation logic
         # Scoring and evaluation metrics
-        scores = EventScoring(all_labels, all_predictions)
+        scores = EventScoring(all_labels, all_predictions, fs=self.args.eval_sample_rate)
         ref = Annotation(all_labels, fs=self.args.eval_sample_rate)
         hyp = Annotation(all_predictions, fs=self.args.eval_sample_rate)
         self.plots.plotEventScoring(ref, hyp)

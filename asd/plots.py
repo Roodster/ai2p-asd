@@ -126,7 +126,7 @@ class EventPlots:
     def __init__(self):
         pass
     
-    def plot_metric_graph(self, results, update=True):
+    def plot(self, results, update=True):
         """Plots logged training results including performance metrics, FP/day, and losses.
            Use 'update=True' if the plot is continuously updated
            or use 'update=False' if this is the final call (to avoid double plotting)."""
@@ -188,50 +188,6 @@ class EventPlots:
             # Save or show the final figure
             plt.show()
             
-            
-            
-    def plotIndividualEvents(self, ref: Annotation, hyp: Annotation,
-                         param: EventScoring.Parameters = EventScoring.Parameters()) -> plt.figure:
-        """Plot each individual event in event scoring.
-        Events are organized in a grid with the events centered in 5 minute windows.
-
-        Args:
-            ref (Annotation): Reference annotations (ground - truth)
-            hyp (Annotation): Hypotheses annotations (output of a ML pipeline)
-            param(EventScoring.Parameters, optional):  Parameters for event scoring.
-                Defaults to default values.
-
-        Returns:
-            plt.figure: Output matplotlib figure
-        """
-        score = EventScoring(ref.mask, hyp.mask, param)
-
-        # Get list of windows to plot (windows are 5 minutes long centered around events)
-        duration = 5 * 60
-        listofWindows = list()
-        plottedMask = np.zeros_like(score.ref.mask)
-        for i, event in enumerate(score.ref.events + score.hyp.events):
-            center = event[0] + (event[1] - event[0]) / 2
-            window = (max(0, center - duration / 2), min(len(plottedMask) / score.fs, center + duration / 2))
-
-            if not np.all(plottedMask[round(event[0] * score.fs):round(event[1] * score.fs)]):
-                plottedMask[round(window[0] * score.fs):round(window[1] * score.fs)] = 1
-                listofWindows.append(window)
-
-        # Plot windows in a grid configuration
-        NCOL = 3
-        nrow = int(np.ceil(len(listofWindows) / NCOL))
-        plt.figure(figsize=(16, nrow * 2))
-        for i, window in enumerate(listofWindows):
-            ax = plt.subplot(nrow, NCOL, i + 1)
-            self.plotEventScoring(ref, hyp, showLegend=False, ax=ax)  # Use self for instance method
-            ax.set_xlim(window)
-            plt.title('Event {}'.format(i))
-        plt.tight_layout()
-
-        plt.show()  # Ensure the plot is shown
-        return plt.gcf()
-
 
 
     def plotEventScoring(self, ref: Annotation, hyp: Annotation,
@@ -239,7 +195,7 @@ class EventPlots:
                          showLegend: bool = True, ax: Axes = None) -> plt.figure:
         """Build an overview plot showing the outcome of event scoring.
            If an axes is provided, plots on that axes, else creates a new figure."""
-        score = EventScoring(ref.mask, hyp.mask, param)
+        score = EventScoring(ref.mask, hyp.mask, param, fs = ref.fs)
         time = np.arange(len(ref.mask)) / ref.fs
 
         if ax is None:
