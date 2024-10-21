@@ -254,6 +254,56 @@ class EventPlots:
         plt.show()
 
         return plt.gcf()
+    
+    
+    def plotIndividualEvents(self, ref: Annotation, hyp: Annotation,
+                             param: EventScoring.Parameters = EventScoring.Parameters()) -> plt.figure:
+        """Plot each individual event in event scoring.
+        Events are organized in a grid with the events centered in 5 minute windows.
+    
+        Args:
+            ref (Annotation): Reference annotations (ground-truth)
+            hyp (Annotation): Hypotheses annotations (output of a ML pipeline)
+            param(EventScoring.Parameters, optional):  Parameters for event scoring.
+                Defaults to default values.
+    
+        Returns:
+            plt.figure: Output matplotlib figure
+        """
+        score = EventScoring(ref.mask, hyp.mask, param, ref.fs)
+    
+        # Get list of windows to plot (windows are 5 minutes long centered around events)
+        duration = 10 * 60  # 5-minute window
+        listofWindows = []
+        plottedMask = np.zeros_like(score.ref.mask)
+    
+        for event in score.ref.events:
+            # Center the window around the event
+            center = event[0] + (event[1] - event[0]) / 2
+            window_start = max(0, center - duration / 2)
+            window_end = min(len(plottedMask) / score.fs, center + duration / 2)
+            window = (window_start, window_end)
+    
+            # Ensure this event hasn't been plotted before
+            if not np.all(plottedMask[round(event[0] * score.fs):round(event[1] * score.fs)]):
+                plottedMask[round(window[0] * score.fs):round(window[1] * score.fs)] = 1
+                listofWindows.append(window)
+    
+        # Plot windows in a grid configuration
+        NCOL = 2  # Change this to make the grid wider or narrower
+        nrow = int(np.ceil(len(listofWindows) / NCOL))
+        plt.figure(figsize=(16, nrow * 2))
+    
+        for i, window in enumerate(listofWindows):
+            ann1 = Annotation(ref.mask[(int(window[0] * ref.fs)):(int(window[1] * ref.fs))], fs = ref.fs)
+            ann2 = Annotation(hyp.mask[int(window[0] * hyp.fs):int(window[1] * hyp.fs)], fs = hyp.fs)
+            self.plotEventScoring(ann1, ann2)
+            print(f"Window {i}: {window}")  # Debug print to verify window ranges
+        
+        return plt.gcf()
+
+
+
 
     def _scale_time_xaxis(self, ax: Axes):
         """Scale x axis of a figure where initial values are in seconds."""
