@@ -7,6 +7,7 @@ from asd.writer import Writer
 from asd.plots import Plots, EventPlots
 from asd.results import Results, EventResults
 from asd.event_scoring.scoring import EventScoring
+from sklearn.metrics import precision_recall_fscore_support
 
 
 class Experiment:
@@ -21,7 +22,7 @@ class Experiment:
             self.plots = EventPlots() if event_scoring else Plots()
             self.label_transformer = label_transformer
             
-            self.start_epochs = len(self.results.epochs)
+            self.start_epochs = len(self.results.epochs) 
             self.last_epoch = self.start_epochs
             
             # ===== TRAINING =====
@@ -74,6 +75,7 @@ class Experiment:
 
 
     def evaluate_predictions(self, model, dataloader, verbose=False):
+        model = model.to(self.device)
         model.eval()
         all_labels = []
         all_predictions = []
@@ -88,7 +90,7 @@ class Experiment:
                     print(f"Shape of batch_labels: {batch_labels.shape}")
 
                 # Get model predictions
-                outputs = model(batch_data)
+                outputs = model(batch_data).to(self.device)
 
                 if verbose:
                     print(f"Shape of outputs: {outputs.shape}")
