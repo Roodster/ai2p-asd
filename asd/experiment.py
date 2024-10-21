@@ -120,7 +120,7 @@ class Experiment:
         scores = EventScoring(all_labels, all_predictions)
         ref = Annotation(all_labels, fs=self.args.eval_sample_rate)
         hyp = Annotation(all_predictions, fs=self.args.eval_sample_rate)
-        plotEventScoring(ref, hyp)
+        self.plots.plotEventScoring(ref, hyp)
 
         print("Any-overlap Performance Metrics:")
         print(f"Sensitivity: {scores.sensitivity:.4f}" if not np.isnan(scores.sensitivity) else "Sensitivity: NaN")
