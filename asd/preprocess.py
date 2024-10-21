@@ -16,8 +16,50 @@ from imblearn.over_sampling import BorderlineSMOTE
 import torch
 import matplotlib.pyplot as plt
 from tqdm import tqdm
-from common.utils import load_edf_filepaths, clean_path, load_eeg_file, save_spectrograms_and_labels, save_signals_and_labels
+from asd.common.utils import load_edf_filepaths, clean_path, load_eeg_file, save_spectrograms_and_labels, save_signals_and_labels, load_seizure_edf_filepaths
+from scipy import signal
 
+class DownSampler(BaseEstimator, TransformerMixin):
+    def __init__(self, original_sr=256, down_sr=128):
+        """
+        Custom sklearn transformer that downsamples EEG data to a specified sampling rate.
+
+        Parameters:
+        original_sr (int): Original sampling rate of the EEG data in Hz (default: 256).
+        down_sr (int): Target sampling rate to downsample to in Hz (default: 128).
+        """
+        self.original_sr = original_sr
+        self.down_sr = down_sr
+
+    def fit(self, X, y=None):
+        # No fitting necessary for this transformer, so just return self
+        return self
+
+    def transform(self, X):
+        """
+        Downsample the EEG data to the specified sampling rate.
+
+        Parameters:
+        X (tuple): Tuple containing (data, labels)
+            data (numpy.ndarray): Data array (channels x samples)
+            labels (numpy.ndarray): Labels array
+
+        Returns:
+        tuple: Downsampled data and corresponding labels
+        """
+        data, labels = X
+
+        # Calculate the downsampling factor
+        downsample_factor = self.original_sr // self.down_sr
+
+        # Downsample the data
+        downsampled_data = signal.decimate(data, downsample_factor, axis=1, zero_phase=True)
+
+        # Downsample the labels
+        downsampled_labels = labels[::downsample_factor]
+
+        return (downsampled_data, downsampled_labels)
+    
 
 class BandpassFilter(BaseEstimator, TransformerMixin):
     def __init__(self, sfreq=256, lowcut=0, highcut=128, order=6):
@@ -107,6 +149,8 @@ class SegmentSignals(BaseEstimator, TransformerMixin):
             # Determine label for the segment (majority vote)
             segment_label = int(np.sum(labels[start:end] > 0) > (end - start) / 2)
             segment_labels.append(segment_label)
+            
+        print(np.array(segmented_data).shape)
         return np.array(segmented_data), np.array(segment_labels)
         
     
@@ -167,6 +211,117 @@ class Spectrograms(BaseEstimator, TransformerMixin):
         spectrograms = self._process_channel(channel_data=segmented_data)
         return (np.array(spectrograms), y)
     
+
+class Pre_Post_Drop(BaseEstimator, TransformerMixin):
+    def __init__(self, segment_length=4, overlap=2, random_state=None):
+        self.random_state=random_state
+        self.segment_length = segment_length
+        self.overlap = overlap
+
+    def fit(self, X, y=None):
+        # No fitting necessary for this transformer, so just return self
+        return self
+    
+    def transform(self, X, y=None):
+        if self.random_state is not None:
+            rnd.seed(self.random_state)
+
+        X, y = X
+        indices_to_remove = [] # We keep track of which indices of X need to be removed and only remove them all at once after, in order to prevent end-of-list issues with the next for-loop
+        
+        for i in range(1, len(y)):
+            if y[i]== 1 and y[i-1] == 0: # Check if i-th segment is the start of a seizure
+
+                indices_to_remove.extend([i-j for j in range(1, int(self.overlap * (60 / self.segment_length)) + 1) if y[j] == 0])
+
+            elif y[i] == 1 and y[i+1] == 0: # Check if i-th segment is end of seizure
+
+                indices_to_remove.extend([i+j for j in range(1, int(self.overlap * (60 / self.segment_length)) + 1) if y[j] == 0 ])
+            else:
+                continue
+
+        #Now we actually remove the segments flagged earlier
+        X = np.delete(X, indices_to_remove, axis=0)
+        y = np.delete(y, indices_to_remove)
+
+        return (X, y)
+
+class RatioPseudoUniformSampling(BaseEstimator, TransformerMixin):
+    def __init__(self, ratio = 2.0, num_blocks=1000):
+        """
+        Custom sklearn transformer that randomly drops a percentage of data. The data it does not drop is evenly distributed in time.
+        
+        Parameters:
+        drop_percentage (float): The percentage of data to drop (0 < drop_percentage < 1).
+        """
+        self.ratio = ratio
+        self.num_blocks = num_blocks
+
+    def fit(self, X, y=None):
+        # No fitting necessary for this transformer, so just return self
+        return self
+    
+    def transform(self, X):
+        """
+        Randomly drop a percentage of the data, accounting for the fact that the number of left over data per hour should be equal for every hour.
+
+        Parameters:
+        X (tuple): Tuple containing:
+            - X (numpy.ndarray): Data array with shape (N, C, F).
+            - y (numpy.ndarray): Labels array with shape (N,).
+
+        Returns:
+        tuple: Tuple containing:
+            - X (numpy.ndarray): Reduced data array.
+            - y (numpy.ndarray): Corresponding reduced labels.
+        """
+        print("Starting normalization and dropping segments.")
+        
+
+        X, y = X
+        # Ensure data is of type float32 for precision
+        X = X.astype(np.float32)
+
+        z = list(range(len(y)))
+
+        X = list(zip(X, y, z))
+
+        seizure_segments = np.array([segment for segment in X if segment[1] == 1], dtype = object)
+        non_seizure_segments = np.array([segment for segment in X if segment[1] == 0], dtype = object)
+
+        # Useful constants
+        num_retain = int(len(seizure_segments)*self.ratio)
+        jump = len(non_seizure_segments) // self.num_blocks
+
+        # Randomly select indices to retain in each block
+        retain_indices = []
+        for i in range(self.num_blocks - 1): 
+            start = i * jump
+            end = (i + 1) * jump
+        
+            to_sample_from = np.arange(start, end)
+
+            if len(to_sample_from) > 0:
+                selected_indices = np.random.choice(to_sample_from, 
+                                                 size = num_retain // self.num_blocks, 
+                                                 replace=False)
+            
+                retain_indices.extend(selected_indices)
+        
+        # Sort the indices to maintain order (optional)
+        retain_indices.sort() 
+        
+        retain_indices = np.array(retain_indices, dtype = int)
+        # Select the retained samples
+        retained_non_seizure_segments = list(non_seizure_segments[retain_indices]) #Change to list to use extend later
+
+        retained_non_seizure_segments.extend(seizure_segments)
+        _ = retained_non_seizure_segments
+        X = sorted(_, key = lambda x: x[2])
+
+        X_reduced, y_reduced, z_reduced = list(zip(*X))
+
+        return np.array(X_reduced), np.array(y_reduced)
 
 
 class DropSegments(BaseEstimator, TransformerMixin):
@@ -292,7 +447,7 @@ class ZScoreNormalization(BaseEstimator, TransformerMixin):
         
         # Compute mean and standard deviation along the channels axis
         mean = np.mean(X, axis=1, keepdims=True)
-        std = np.std(X, axis=1, keepdims=True)
+        std = np.std(X, axis=1, ddof=1, keepdims=True)
         
         # Perform z-score normalization
         normalized_data = (X - mean) / std
@@ -658,7 +813,6 @@ class BalanceSeizureSegments(BaseEstimator, TransformerMixin):
         # Shuffle the combined segments
         segments = np.array([signal for signal, _ in balanced_segments])
         labels = np.array([label for _, label in balanced_segments])
-    
         return (segments, labels) 
     
     
@@ -782,7 +936,6 @@ def load_npz_files(root_dir):
                 
                 except Exception as e:
                     print(f"Error loading {file_path}: {e}")
-    # print("count, ", cnt)
     # Convert lists to tensors
     
     print("number of seizures: ", seizure_count)
@@ -801,11 +954,6 @@ def load_npz_files(root_dir):
     shuffled_non_seiz = torch_non_seiz[non_seiz_indices]
     shuffled_non_seiz_labels = torch_non_seiz_labels[non_seiz_indices]
 
-    # # Print counts and shapes
-    # print("Count of seizures: ", len(seiz_segments))
-    # print("Count of non-seizures: ", len(non_seiz_segments))
-    # print("Seizures shape: ", shuffled_seiz.shape)
-    # print("Non-seizures shape: ", shuffled_non_seiz.shape)
 
     # Return both shuffled segments and their respective labels
     return (shuffled_seiz, shuffled_seiz_labels), (shuffled_non_seiz, shuffled_non_seiz_labels)
@@ -839,7 +987,7 @@ def process_patient_folder(patient_folder, save_root):
     all_labels = []
 
     # Load all .edf file paths for the current patient
-    files_list = load_edf_filepaths(patient_folder)
+    files_list = load_seizure_edf_filepaths(patient_folder)
     
     pbar = tqdm(files_list)
     for file in pbar: 
@@ -855,8 +1003,6 @@ def process_patient_folder(patient_folder, save_root):
         eeg_data = eeg_file.data
         labels = eeg_file.get_labels()
 
-        print(f"Loaded file {file}: EEG data shape: {eeg_data.shape}, Labels shape: {labels.shape}")
-
         all_eeg_data.append(eeg_data)
         all_labels.append(labels)
 
@@ -867,11 +1013,19 @@ def process_patient_folder(patient_folder, save_root):
     # print(f"Combined EEG data shape for {os.path.basename(patient_folder)}: {combined_eeg_data.shape}")
     # print(f"Combined labels shape for {os.path.basename(patient_folder)}: {combined_labels.shape}")
 
+    SAMPLE_RATE = 256
+    NEW_SAMPLE_RATE = 256
+    SEGMENT_LENGTH = 1
+    OVERLAP = 0.0
+    RATIO = 1
+
     # Apply the pipeline on the combined data
-    pipeline = Pipeline([('filters', BandpassFilter(sfreq=256, lowcut=1, highcut=40, order=6)),
+    pipeline = Pipeline([('filters', BandpassFilter(sfreq=SAMPLE_RATE, lowcut=0.1, highcut=40, order=6)),
+                        #  ('downsample', DownSampler(SAMPLE_RATE, NEW_SAMPLE_RATE)),
                          ('normalizes', ZScoreNormalization()),
-                         ('segments', SegmentSignals(fs=256, segment_length=4, overlap=0))
-                        #  ('delete', DropSegments(drop_percentage=0.7))
+                         ('segments', SegmentSignals(fs=NEW_SAMPLE_RATE, segment_length=SEGMENT_LENGTH, overlap=OVERLAP)),
+                        #  ('prepostdrop', Pre_Post_Drop(segment_length=SEGMENT_LENGTH, overlap=OVERLAP, random_state=42)),
+                        #  ('balance', BalanceSeizureSegments(random_state=42, ratio=RATIO))
                          ]) 
     X, y = pipeline.transform(X=(combined_eeg_data, combined_labels))
     print(f"Transformed data shape for {os.path.basename(patient_folder)}: {X.shape}")
@@ -951,8 +1105,8 @@ def process_seizure_files():
     
 
 if __name__ == "__main__":
-    dataset_path = "./data/dataset/train/raw/minichb01"
-    save_root_path = "./data/dataset/chb01_test_smoteee"
+    dataset_path = "./data/dataset/train/raw/temp"
+    save_root_path = "./data/dataset/test/4-signals-1s-256fs/"
 
     # If you want to use the previous dataset creation approach, use this:
     # process_seizure_files()
@@ -961,7 +1115,7 @@ if __name__ == "__main__":
     # process_all_patients(dataset_path, save_root_path)
     
     # If you want to process a single patient (for test set), use this
-    process_patient_folder(dataset_path, save_root_path)
+    process_all_patients(dataset_path, save_root_path)
     
     # load_npz_files("./data/dataset/chb01_test_0.2")
 
