@@ -47,15 +47,6 @@ class _Scoring:
         # FP Rate
         self.fpRate = self.fp / (self.numSamples / self.fs / 3600 / 24)  # FP per day
 
-        # Print the results nicely
-        print("Performance Metrics:")
-        print(f"Sensitivity: {self.sensitivity:.4f}" if not np.isnan(self.sensitivity) else "Sensitivity: NaN")
-        print(f"Precision: {self.precision:.4f}" if not np.isnan(self.precision) else "Precision: NaN")
-        print(f"F1 Score: {self.f1:.4f}" if not np.isnan(self.f1) else "F1 Score: NaN")
-        print(f"False Positive Rate (FP/day): {self.fpRate:.4f}")
-            
-
-
 
 class EventScoring(_Scoring):
     """Calculates performance metrics on an event basis"""

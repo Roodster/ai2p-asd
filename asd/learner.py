@@ -139,7 +139,7 @@ class Learner(BaseLearner):
                 all_predictions.extend(outputs.cpu().numpy())
           
         if(self.event_scoring):
-            scores = EventScoring(all_labels, all_predictions, fs=self.args.eval_sample_rate)
+            scores = EventScoring(all_labels, all_predictions,  fs=self.args.eval_sample_rate)
             ref = Annotation(all_labels, fs=self.args.eval_sample_rate)
             hyp = Annotation(all_predictions, fs=self.args.eval_sample_rate)
             plotEventScoring(ref, hyp)
@@ -148,6 +148,12 @@ class Learner(BaseLearner):
             results.precisions = scores.precision
             results.sensitivities = scores.sensitivity
             results.f1s = scores.f1
+            print("Any-overlap Performance Metrics:")
+            print(f"Sensitivity: {scores.sensitivity:.4f}" if not np.isnan(scores.sensitivity) else "Sensitivity: NaN")
+            print(f"Precision: {scores.precision:.4f}" if not np.isnan(scores.precision) else "Precision: NaN")
+            print(f"F1 Score: {scores.f1:.4f}" if not np.isnan(scores.f1) else "F1 Score: NaN")
+            print(f"False Positive Rate (FP/day): {scores.fpRate:.4f}")
+            
         else:
             # Calculate overall metrics
             accuracy = accuracy_score(all_labels, all_predictions)

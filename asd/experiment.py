@@ -6,14 +6,12 @@ from asd.common.utils import set_seed
 from asd.writer import Writer
 from asd.plots import Plots, EventPlots
 from asd.results import Results, EventResults
+from asd.event_scoring.scoring import EventScoring
 
 
 class Experiment:
     
-    
-    def __init__(self, args, learner, results, label_transformer=None, do_plot=True, verbose=False, event_scoring=False):
-            assert learner is not None, "NO learner"
-
+    def __init__(self, args, learner=None, results=None, label_transformer=None, do_plot=True, verbose=False, event_scoring=False):
             # ===== DEPENDENCIES =====
             self.event_scoring=event_scoring
             self.args = args
@@ -74,4 +72,29 @@ class Experiment:
             self.plots.plot(results=self.results, update=False)
         self.writer.save_statistics(self.results.get())
 
-            
+
+
+    def evaluate_predictions(all_predictions, all_labels):
+        scores = EventScoring(all_labels, all_predictions)
+        ref = Annotation(all_labels, fs=self.args.eval_sample_rate)
+        hyp = Annotation(all_predictions, fs=self.args.eval_sample_rate)
+        plotEventScoring(ref, hyp)
+        print("Any-overlap Performance Metrics:")
+        print(f"Sensitivity: {scores.sensitivity:.4f}" if not np.isnan(scores.sensitivity) else "Sensitivity: NaN")
+        print(f"Precision: {scores.precision:.4f}" if not np.isnan(scores.precision) else "Precision: NaN")
+        print(f"F1 Score: {scores.f1:.4f}" if not np.isnan(scores.f1) else "F1 Score: NaN")
+        print(f"False Positive Rate (FP/day): {scores.fpRate:.4f}")
+
+        # Calculate overall metrics
+        accuracy = accuracy_score(all_labels, all_predictions)
+        auc = roc_auc_score(all_labels, all_predictions, average='macro')
+        overall_precision, overall_recall, overall_f1, _ = precision_recall_fscore_support(all_labels, all_predictions, average='macro')
+        
+        print("Segment based evaluation:")
+        print(f"AUC: {auc}")
+        print(f"Precision: {overall_precision}")
+        print(f"Sensitivity (Recall): {overall_recall}")
+        print(f"F1 Score: {overall_f1}")
+        print(f"Accuracy: {accuracy}")
+        
+        
