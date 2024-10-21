@@ -22,7 +22,7 @@ class Experiment:
             self.plots = EventPlots() if event_scoring else Plots()
             self.label_transformer = label_transformer
             
-            self.start_epochs = len(self.results.epochs) 
+            self.start_epochs = len(self.results.epochs) if self.results else None
             self.last_epoch = self.start_epochs
             
             # ===== TRAINING =====
