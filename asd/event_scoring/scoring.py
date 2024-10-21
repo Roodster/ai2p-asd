@@ -90,7 +90,7 @@ class EventScoring(_Scoring):
             self.minDurationBetweenEvents = minDurationBetweenEvents
             self.fs = sampling_rate # Operate at a time precision of 256 Hz
 
-    def __init__(self, ref_mask, hyp_mask, param: Parameters = Parameters()):
+    def __init__(self, ref_mask, hyp_mask, param: Parameters = Parameters(), fs: int = None):
         """Computes a scoring on an event basis.
 
         Args:
@@ -100,7 +100,7 @@ class EventScoring(_Scoring):
                 Defaults to default values.
         """
         # Resample data
-        self.fs = param.fs
+        self.fs = fs if fs is not None else param.fs
         self.ref = Annotation(ref_mask, self.fs)
         self.hyp = Annotation(hyp_mask, self.fs)
 
