@@ -120,10 +120,8 @@ class Experiment:
         # After all predictions are calculated, proceed with the evaluation logic
         # Scoring and evaluation metrics
         scores = EventScoring(all_labels, all_predictions, fs=self.args.eval_sample_rate)
-        ref = Annotation(all_labels, fs=self.args.eval_sample_rate)
-        hyp = Annotation(all_predictions, fs=self.args.eval_sample_rate)
-        self.plots.plotEventScoring(ref, hyp)
-
+        self.plots.plotEventScoring(scores.ref, scores.hyp)
+        self.plots.plotIndividualEvents(scores.ref, scores.hyp)
         print("Any-overlap Performance Metrics:")
         print(f"Sensitivity: {scores.sensitivity:.4f}" if not np.isnan(scores.sensitivity) else "Sensitivity: NaN")
         print(f"Precision: {scores.precision:.4f}" if not np.isnan(scores.precision) else "Precision: NaN")
