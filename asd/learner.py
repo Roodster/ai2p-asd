@@ -7,7 +7,7 @@ from torch.autograd import Variable
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support, roc_auc_score
 from asd.event_scoring.annotation import Annotation
 from asd.event_scoring.scoring import EventScoring
-from asd.event_scoring.visualizations import plotEventScoring, plotIndividualEvents
+from asd.plots import EventPlots
 
 class BaseLearner:
     def __init__(self, 
@@ -142,7 +142,7 @@ class Learner(BaseLearner):
             scores = EventScoring(all_labels, all_predictions,  fs=self.args.eval_sample_rate)
             ref = Annotation(all_labels, fs=self.args.eval_sample_rate)
             hyp = Annotation(all_predictions, fs=self.args.eval_sample_rate)
-            plotEventScoring(ref, hyp)
+            EventPlots().plotEventScoring(ref, hyp)
             # plotIndividualEvents(ref, hyp)
             results.fp_rates = scores.fpRate
             results.precisions = scores.precision
