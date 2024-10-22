@@ -90,7 +90,7 @@ class OnlineSegmentsDataset(Dataset):
 
     def __getitem__(self, idx):
 
-        npz_file = np.load(self.file_list[idx])
+        npz_file = np.load(self.file_list[idx], allow_pickle=True)
 
         segment = torch.from_numpy(npz_file['x'].astype(np.float32))
 
