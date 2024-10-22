@@ -19,6 +19,7 @@ from tqdm import tqdm
 from common.utils import load_edf_filepaths, clean_path, load_eeg_file, save_spectrograms_and_labels, save_signals_and_labels
 
 
+
 class BandpassFilter(BaseEstimator, TransformerMixin):
     def __init__(self, sfreq=256, lowcut=0, highcut=128, order=6):
         """
@@ -298,6 +299,44 @@ class ZScoreNormalization(BaseEstimator, TransformerMixin):
         normalized_data = (X - mean) / std
         
         return (normalized_data, y)
+
+class MeanDownSampling(BaseEstimator, TransformerMixin):
+    """
+    Returns (new_X: downsampled eeg-data, new_y: downsamples labels (obtained through majority vote))
+    """
+    def __init__(self, down_freq = 64, sfreq=256):
+        self.down_freq = down_freq
+        self.sfreq = sfreq
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X):
+        X, y = X
+
+        step = int(self.sfreq / self.down_freq)
+
+        num_channels, num_samples = X.shape
+
+        new_X = np.zeros(shape = (num_channels, int(num_samples / step)))
+        new_y = np.zeros(shape = (int(num_samples / step)))
+
+        #Downsample values of X, the eeg-data
+        for i in range(num_channels): #For each channel
+            for j in range(int(num_samples / step)):
+                averaged_val = np.sum(X[i][j * step : (j+1) * step]) / step
+                new_X[i][j] = averaged_val
+        
+        #Downsample the values of y, the labels. This is done through majority vote, where a tie means it is labeled as a seizure
+        for i in range(int(num_samples / step)):
+            sum_y = np.sum(y[i * step: (i+1) * step])
+
+            if sum_y <= 1:
+                new_y[i] = -1
+            else:
+                new_y[i] = 1
+
+        return (new_X, new_y)
     
 class RMSAmplitudeFilter(BaseEstimator, TransformerMixin):
     def __init__(self, min_amplitude=0.5, max_amplitude=150, return_id=False):
@@ -1241,12 +1280,12 @@ def process_patient_folder(patient_folder, save_root):
         # pbar.set_description(f"current file {file}")
         
         # Check if a corresponding .edf.seizures file exists
-        seizure_file = filename + '.seizures'
-        if i == 0:
-            if os.path.exists(seizure_file):
-                edf_files.append(r'{}'.format(filename))
-                i += 1
-                continue
+       # seizure_file = file + '.seizures'
+       # if i == 0:
+       #     if os.path.exists(seizure_file):
+       #         print(f"Skipped {file}")
+       #         i += 1
+       #         continue
 
         # channels="FZ-CZ;CZ-PZ;F8-T8;P4-O2;FP2-F8;F4-C4;C4-P4;P3-O1;FP2-F4;F3-C3;C3-P3;P7-O1;FP1-F3;F7-T7;T7-P7;FP1-F7"
         eeg_file = load_eeg_file(file)
@@ -1272,10 +1311,11 @@ def process_patient_folder(patient_folder, save_root):
 
     # Apply the pipeline on the combined data
     pipeline = Pipeline([('filters', BandpassFilter(sfreq=256, lowcut=1, highcut=40, order=6)),
+                         ('down sampling', MeanDownSampling(down_freq=64, sfreq=256)),
                          ('normalizes', ZScoreNormalization()),
-                         ('segments', SegmentSignals(fs=256, segment_length=4, overlap=2)),
+                         ('segments', SegmentSignals(fs=64, segment_length=4, overlap=2)),
                          ('drop', Pre_Post_Drop()),
-                         ('sample', RatioPseudoUniformSampling(ratio=2, num_blocks=1000)),
+                         ('sample', RatioPseudoUniformSampling(ratio=2, num_blocks=1000))
                          ]) 
 
     X, y = pipeline.transform(X=(combined_eeg_data, combined_labels))
@@ -1294,7 +1334,7 @@ def process_patient_folder(patient_folder, save_root):
 
 
 
-def process_all_patients(dataset_path, save_root_path, patient_exclude):
+def process_all_patients(dataset_path, save_root_path):
     """
     Process all patient folders in the dataset.
     :param dataset_path: Path to the root folder containing patient folders (e.g., ./data/dataset/train/raw/)
@@ -1304,12 +1344,6 @@ def process_all_patients(dataset_path, save_root_path, patient_exclude):
     for patient_folder in os.listdir(dataset_path):
         full_patient_path = os.path.join(dataset_path, patient_folder)
         if os.path.isdir(full_patient_path):  # Only process directories (patient folders)
-            patient_suffix = patient_folder[-2:] 
-            
-            if patient_suffix == patient_exclude:
-                print(f"Skipping patient {patient_folder} (excluded based on suffix: {patient_suffix})")
-                continue
-            
             process_patient_folder(full_patient_path, save_root_path)
 
     
@@ -1368,30 +1402,25 @@ def process_all_seizure_files(dataset_path, dataset_save_root_path):
     
 
 if __name__ == "__main__":
-    dataset_path_full_chb11 = "./data/dataset/raw/full/chb11"
-    dataset_path_exclude_chb11 = "./data/dataset/raw/exclude_chb01/chb11"
+    dataset_path = "./data/dataset/raw/full"
+    dataset_path_single = './data/dataset/raw/full/chb04'
 
-    dataset_path_full = "./data/dataset/raw/full"
-    dataset_path_exclude = "./data/dataset/raw/exclude_chb01"
+    save_root_path = "./data/dataset/ivan_train/full_train"
 
-    save_root_path = "./data/dataset/ivan_train/exclude_chb01"
-
-    print(f"Files in dataset_path_full: {load_edf_filepaths(dataset_path_full)}")
-    print(f"Files in dataset_path_exclude: {load_edf_filepaths(dataset_path_exclude)}")
+    #print(f"Files in dataset_path_full: {load_edf_filepaths(dataset_path)}")
 
     
     # If you want to use the previous dataset creation approach, use this:
-    #process_seizure_files(dataset_path, save_root_path)
+    #process_seizure_files(dataset_path_single, save_root_path)
 
     # If you want to process all directories using previous dataset creation approach    
     #process_all_seizure_files(dataset_path, save_root_path)
 
     # If you want to process all directories
-    process_all_patients(dataset_path_full, save_root_path, 1)
+    #process_all_patients(dataset_path, save_root_path)
     
     # If you want to process a single patient (for test set), use this
-    #process_patient_folder(dataset_path_full_chb11, save_root_path)
-    #process_patient_folder(dataset_path_exclude_chb11, save_root_path)
+    process_patient_folder(dataset_path_single, save_root_path)
     
     # load_npz_files("./data/dataset/chb01_test_0.2")
 
