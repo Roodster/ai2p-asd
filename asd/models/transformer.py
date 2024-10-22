@@ -4,16 +4,16 @@ import math
 import torch as th
 import torch.nn as nn
 
-from torch.nn import CrossEntropyLoss, Dropout, Softmax, Linear, Conv2d, LayerNorm
+from torch.nn import Dropout, Softmax, Linear, Conv2d, LayerNorm
 from torch.nn.modules.utils import _pair
 
 from asd.models.base import BaseModel
 
 class Attention(BaseModel):
-    def __init__(self, args):
+    def __init__(self, args, hidden_size=256):
         super(Attention, self).__init__(args=args)
         
-        self.hidden_size = 256
+        self.hidden_size = hidden_size
         self.num_attention_heads = 8
         self.attention_head_size = int(self.hidden_size / self.num_attention_heads)
         self.all_head_size = self.num_attention_heads * self.attention_head_size
@@ -57,61 +57,13 @@ class Attention(BaseModel):
         attention_output = self.proj_dropout(attention_output)
         # print(f"Attention output {attention_output.shape}")
 
-        return attention_output
-
-
-
-class VisualAttentionModel(nn.Module):
-    def __init__(self, vision_transformer_model):
-        """
-        Initialize the VisualAttentionModel class with the trained Vision Transformer model.
-        This can be used to plot the attention scores of the learned transformer model for a certain image.
-
-        Args:
-            vision_transformer_model (nn.Module): Trained Vision Transformer model instance.
-        """
-        super(VisualAttentionModel, self).__init__()
-        # Extract transformer encoder from the trained Vision Transformer
-        self.encoder = vision_transformer_model.transformer.encoder
-        self.embeddings = vision_transformer_model.transformer.embeddings
-        self.encoder_norm = vision_transformer_model.transformer.encoder.encoder_norm
-        self.device = vision_transformer_model.device
-        
-        # Transfer weights from the trained model to VisualAttention
-        self.load_state_dict(vision_transformer_model.state_dict(), strict=False)
-        self.to(self.device)
-
-    def forward(self, x):
-        """
-        Forward pass to obtain attention scores.
-
-        Args:
-            x (torch.Tensor): Input image tensor.
-
-        Returns:
-            attention_scores_all_layers (list of torch.Tensor): List of attention scores for each layer.
-        """
-        x = x.to(self.device)
-        embedding_output = self.embeddings(x)
-        
-        attention_scores_all_layers = []
-        hidden_states = embedding_output.to(self.device)
-
-        # Pass through each encoder block and capture attention scores
-        for layer_block in self.encoder.layer:
-            hidden_states, attn_scores = layer_block(hidden_states)
-            attention_scores_all_layers.append(attn_scores)
-        
-        # Final layer normalization
-        encoded = self.encoder_norm(hidden_states)
-        return encoded, attention_scores_all_layers
-    
+        return attention_output    
 
 class MLP(BaseModel):
-    def __init__(self, args):
+    def __init__(self, args, hidden_size=256):
         super(MLP, self).__init__(args=args)
-        self.fc1 = Linear(256, 256).to(self.device)
-        self.fc2 = Linear(256, 256).to(self.device)
+        self.fc1 = Linear(hidden_size, hidden_size).to(self.device)
+        self.fc2 = Linear(hidden_size, hidden_size).to(self.device)
         self.act_fn = th.nn.functional.gelu
         self.dropout = Dropout(p=0.2)
 
@@ -124,7 +76,8 @@ class MLP(BaseModel):
         nn.init.normal_(self.fc2.bias, std=1e-6)
 
     def forward(self, x):
-        # print(f"MLP {x.shape}")
+        
+#         print(f"MLP {x.shape}")
         x = x.to(self.device)
         x = self.fc1(x)
         # print(f"MLP fc1 {x.shape}")
@@ -144,7 +97,7 @@ class MLP(BaseModel):
 class Embeddings(BaseModel):
     """Construct the embeddings from patch, position embeddings.
     """
-    def __init__(self, args, img_size=(4, 256), patch_sizes=(16, 16), in_channels=1):
+    def __init__(self, args, img_size=(4, 256), patch_sizes=(16, 16), hidden_size=256, in_channels=1):
         super(Embeddings, self).__init__(args=args)
         img_size = _pair(img_size)
 
@@ -152,12 +105,12 @@ class Embeddings(BaseModel):
         n_patches = (img_size[0] // patch_size[0]) * (img_size[1] // patch_size[1])
         
         self.patch_embeddings = Conv2d(in_channels=in_channels,
-                                       out_channels=256,
+                                       out_channels=hidden_size,
                                        kernel_size=patch_size,
                                        stride=patch_size).to(self.device)
                 
-        self.position_embeddings = nn.Parameter(th.zeros(1, n_patches + 1, 256)).to(self.device)
-        self.cls_token = nn.Parameter(th.zeros(1, 1, 256)).to(self.device)
+        self.position_embeddings = nn.Parameter(th.zeros(1, n_patches + 1, hidden_size)).to(self.device)
+        self.cls_token = nn.Parameter(th.zeros(1, 1, hidden_size)).to(self.device)
 
         self.dropout = Dropout(0.2)
 
@@ -195,16 +148,17 @@ class Embeddings(BaseModel):
 
 
 class Block(BaseModel):
-    def __init__(self, args):
+    def __init__(self, args, hidden_size=256):
         super(Block, self).__init__(args=args)
-        self.hidden_size = 256
-        self.attention_norm = LayerNorm(256, eps=1e-6).to(self.device)
-        self.attn = Attention(args).to(self.device)
-        self.ffn_norm = LayerNorm(256, eps=1e-6).to(self.device)
-        self.ffn = MLP(args).to(self.device)
+        self.hidden_size = hidden_size
+        self.attention_norm = LayerNorm(hidden_size, eps=1e-6).to(self.device)
+        self.attn = Attention(args, hidden_size=hidden_size).to(self.device)
+        self.ffn_norm = LayerNorm(hidden_size, eps=1e-6).to(self.device)
+        self.ffn = MLP(args, hidden_size).to(self.device)
 
     def forward(self, x):
-        # print(f"Block {x.shape}")
+        
+#         print(f"Block {x.shape}")
         x = x.to(self.device)
 
         h = x
@@ -226,12 +180,12 @@ class Block(BaseModel):
 
 
 class Encoder(BaseModel):
-    def __init__(self, args, n_encoders):
+    def __init__(self, args, n_encoders, hidden_size=256):
         super(Encoder, self).__init__(args=args)
         self.layer = nn.ModuleList()
-        self.encoder_norm = LayerNorm(256, eps=1e-6).to(self.device)
+        self.encoder_norm = LayerNorm(hidden_size, eps=1e-6).to(self.device)
         for _ in range(n_encoders):
-            layer = Block(args)
+            layer = Block(args, hidden_size=hidden_size)
             self.layer.append(copy.deepcopy(layer))
 
     def forward(self, hidden_states):
@@ -247,43 +201,47 @@ class Encoder(BaseModel):
 
 
 class Transformer(BaseModel):
-    def __init__(self, args, img_size=(4,256), patch_sizes=(4,4), in_channels=1, n_encoders=1):
+    def __init__(self, args, img_size=(4,256), patch_sizes=(4,4), in_channels=1, n_encoders=1, hidden_size=256):
         super(Transformer, self).__init__(args=args)
-        self.embeddings = Embeddings(args, img_size=img_size, patch_sizes=patch_sizes, in_channels=in_channels).to(self.device)
-        self.encoder = Encoder(args, n_encoders=n_encoders).to(self.device)
+        self.embeddings = Embeddings(args, img_size=img_size, patch_sizes=patch_sizes, in_channels=in_channels, hidden_size=hidden_size).to(self.device)
+        self.encoder = Encoder(args, n_encoders=n_encoders, hidden_size=hidden_size).to(self.device)
 
     def forward(self, x):
         x = x.to(self.device)
 
-        # print(f"Transformer {input_ids.shape}")
+#         print(f"Transformer {x.shape}")
 
         embedding_output = self.embeddings(x)
-        # print(f"Encoder encoded {embedding_output.shape}")
+#         print(f"Encoder encoded {embedding_output.shape}")
 
         encoded = self.encoder(embedding_output)
-        # print(f"Encoder encoded {encoded.shape}")
-
+#         print(f"Encoder encoded {encoded.shape}")
+        
         return encoded
 
 
 class VisionTransformer(BaseModel):
-    def __init__(self, args, img_size=(4, 256), num_classes=2, patch_sizes=(4,4), in_channels=1, n_encoders=1, has_head=True):
+    def __init__(self, args, img_size=(4, 256), num_classes=2, patch_sizes=(4,4), in_channels=1, n_encoders=1, hidden_size=256, has_head=True):
         super(VisionTransformer, self).__init__(args=args)
         self.num_classes = num_classes
         self.has_head = has_head
 
-        self.transformer = Transformer(args, img_size=img_size, patch_sizes=patch_sizes, in_channels=in_channels, n_encoders=n_encoders).to(self.device)
-        self.head = Linear(256, num_classes).to(self.device)
-                        
+        self.transformer = Transformer(args, img_size=img_size, patch_sizes=patch_sizes, in_channels=in_channels, n_encoders=n_encoders, hidden_size=hidden_size).to(self.device)
+        self.head = Linear(img_size[0]*hidden_size, num_classes).to(self.device)
 
     def forward(self, x):
+        
+        B, C, N, T = x.shape
         x = x.to(self.device)
         # print(f"VisionTransformer {x.shape}")
         x = self.transformer(x)
         # print(f"VisionTransformer transformer {x.shape}")
-        
+#         print('x output shape: ', x.shape)
+        x  = x.view(B, -1)
+            
         if self.has_head:
-            logits = self.head(x[:, 0])
+            logits = self.head(x)
+
             return logits
         else:
             return x
@@ -328,22 +286,21 @@ class CutRearrange(BaseModel):
 
 class SSLTransformer(BaseModel):
     
-    def __init__(self, args, img_size=(4, 256), num_classes=2, patch_sizes=(4,4), in_channels=1, n_encoders=1, has_head=True, n_segments=8):
-        super().__init__(args=args)    
+    def __init__(self, args, img_size=(4, 256), num_classes=2, patch_sizes=(4,4), in_channels=1, n_encoders=1, hidden_size=256, has_head=True, n_segments=8):
+        super(SSLTransformer, self).__init__(args=args)    
         self.gaussian_noise = GaussianNoise(args=args, img_size=img_size)
         self.cut_rearrange = CutRearrange(args=args, n_segments=n_segments)
         
-        self.encoder1 = VisionTransformer(args=args, img_size=img_size, num_classes=num_classes, patch_sizes=patch_sizes, in_channels=in_channels, n_encoders=n_encoders, has_head=has_head)
-        self.encoder2 = VisionTransformer(args=args, img_size=img_size, num_classes=num_classes, patch_sizes=patch_sizes, in_channels=in_channels, n_encoders=n_encoders, has_head=has_head)
+        self.encoder1 = VisionTransformer(args=args, img_size=img_size, num_classes=num_classes, patch_sizes=patch_sizes, in_channels=in_channels, n_encoders=n_encoders, hidden_size=hidden_size, has_head=has_head)
+        self.encoder2 = VisionTransformer(args=args, img_size=img_size, num_classes=num_classes, patch_sizes=patch_sizes, in_channels=in_channels, n_encoders=n_encoders, hidden_size=hidden_size, has_head=has_head)
         
     def forward(self, x):
-
+        
         x1 = self.gaussian_noise(x)
         x2 = self.cut_rearrange(x)
         
         p1 = self.encoder1(x1)
         p2 = self.encoder2(x2) 
-        
         return p1, p2
     
     

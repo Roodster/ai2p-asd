@@ -9,36 +9,26 @@ class ContrastiveLoss(nn.Module):
         self.similarity = nn.CosineSimilarity(dim=-1, eps=1e-7)
     
     def forward(self, outputs):
-        """
-        Args:
-            first_transformed: Tensor of shape [batch_size, features] from transformation 1 (e.g. P(T1(x)))
-            second_transformed: Tensor of shape [batch_size, features] from transformation 2 (e.g. P(T2(x)))
 
-        Returns:
-            contrastive_loss: Computed contrastive loss as per equation (5)
-        """
-        first_transformed, second_transformed = outputs
-        # Compute the cosine similarity between the transformed pairs
-        pos_similarity = self.similarity(first_transformed, second_transformed)
+        a, b = outputs
         
-        # Organize batch into positive and negative pairs, including all-to-all comparisons
-        batch_size = first_transformed.size(0)
+        B, C, T = a.shape
         
-        # Calculate the full similarity matrix for the transformed features
-        combined_transformed = th.cat([first_transformed, second_transformed], dim=0)  # [2*batch_size, features]
-        similarity_matrix = self.similarity(combined_transformed.unsqueeze(1), combined_transformed.unsqueeze(0))  # [2*batch_size, 2*batch_size]
+        a_flat = a.view(B, -1)
+        b_flat = a.view(B, -1) 
+        features = th.cat([a_flat, b_flat], dim=0)
+                
+        # Calculate cosine similarity
+        cos_sim = F.cosine_similarity(features[:,None,:], features[None,:,:], dim=-1)
+        # Mask out cosine similarity to itself
+        self_mask = th.eye(cos_sim.shape[0], dtype=th.bool, device=cos_sim.device)
+        cos_sim.masked_fill_(self_mask, -9e15)
+        # Find positive example -> batch_size//2 away from the original example
+        pos_mask = self_mask.roll(shifts=cos_sim.shape[0]//2, dims=0)
 
-        # Mask out the diagonal (self-similarity)
-        mask = th.eye(2 * batch_size, device=similarity_matrix.device).bool()
-        similarity_matrix.masked_fill_(mask, float('-inf'))
+        # InfoNCE loss
+        cos_sim = cos_sim / self.temperature
+        nll = -cos_sim[pos_mask] + th.logsumexp(cos_sim, dim=-1)
+        nll = nll.mean()
 
-        # Split similarity matrix into positive and negative pairs
-        positive_similarities = pos_similarity / self.temperature
-        
-        # Negative pairs
-        neg_similarities = F.softmax(similarity_matrix / self.temperature, dim=1)
-        
-        # Contrastive loss: sum of positive and negative log-sum-exp losses
-        loss = -positive_similarities.mean() + neg_similarities.mean()
-        
-        return loss
+        return nll

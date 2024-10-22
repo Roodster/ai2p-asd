@@ -1,4 +1,9 @@
 
+
+/assets/
+**/archived_dataset/
+**.png
+
 # Virtual environments
 .env
 .venv
