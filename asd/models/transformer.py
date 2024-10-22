@@ -4,11 +4,12 @@ import math
 import torch as th
 import torch.nn as nn
 
-from torch.nn import Dropout, Softmax, Linear, Conv2d, LayerNorm
+from torch.nn import CrossEntropyLoss, Dropout, Softmax, Linear, Conv2d, LayerNorm
 from torch.nn.modules.utils import _pair
 
 from asd.models.base import BaseModel
 
+    
 class Attention(BaseModel):
     def __init__(self, args, hidden_size=256):
         super(Attention, self).__init__(args=args)
@@ -58,6 +59,52 @@ class Attention(BaseModel):
         # print(f"Attention output {attention_output.shape}")
 
         return attention_output    
+
+
+class VisualAttentionModel(nn.Module):
+    def __init__(self, vision_transformer_model):
+        """
+        Initialize the VisualAttentionModel class with the trained Vision Transformer model.
+        This can be used to plot the attention scores of the learned transformer model for a certain image.
+
+        Args:
+            vision_transformer_model (nn.Module): Trained Vision Transformer model instance.
+        """
+        super(VisualAttentionModel, self).__init__()
+        # Extract transformer encoder from the trained Vision Transformer
+        self.encoder = vision_transformer_model.transformer.encoder
+        self.embeddings = vision_transformer_model.transformer.embeddings
+        self.encoder_norm = vision_transformer_model.transformer.encoder.encoder_norm
+        self.device = vision_transformer_model.device
+        
+        # Transfer weights from the trained model to VisualAttention
+        self.load_state_dict(vision_transformer_model.state_dict(), strict=False)
+        self.to(self.device)
+
+    def forward(self, x):
+        """
+        Forward pass to obtain attention scores.
+
+        Args:
+            x (torch.Tensor): Input image tensor.
+
+        Returns:
+            attention_scores_all_layers (list of torch.Tensor): List of attention scores for each layer.
+        """
+        x = x.to(self.device)
+        embedding_output = self.embeddings(x)
+        
+        attention_scores_all_layers = []
+        hidden_states = embedding_output.to(self.device)
+
+        # Pass through each encoder block and capture attention scores
+        for layer_block in self.encoder.layer:
+            hidden_states, attn_scores = layer_block(hidden_states)
+            attention_scores_all_layers.append(attn_scores)
+        
+        # Final layer normalization
+        encoded = self.encoder_norm(hidden_states)
+        return encoded, attention_scores_all_layers
 
 class MLP(BaseModel):
     def __init__(self, args, hidden_size=256):
@@ -302,6 +349,9 @@ class SSLTransformer(BaseModel):
         p1 = self.encoder1(x1)
         p2 = self.encoder2(x2) 
         return p1, p2
+    
+    
+    
     
     
     
