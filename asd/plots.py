@@ -197,7 +197,6 @@ class EventPlots:
            If an axes is provided, plots on that axes, else creates a new figure."""
         score = EventScoring(ref.mask, hyp.mask, param, fs = ref.fs)
         time = np.arange(len(ref.mask)) / ref.fs
-
         if ax is None:
             plt.figure(figsize=(16, 3))
             ax = plt.axes()
@@ -255,7 +254,6 @@ class EventPlots:
 
         return plt.gcf()
     
-    
     def plotIndividualEvents(self, ref: Annotation, hyp: Annotation,
                              param: EventScoring.Parameters = EventScoring.Parameters()) -> plt.figure:
         """Plot each individual event in event scoring.
@@ -273,11 +271,11 @@ class EventPlots:
         score = EventScoring(ref.mask, hyp.mask, param, ref.fs)
     
         # Get list of windows to plot (windows are 5 minutes long centered around events)
-        duration = 10 * 60  # 5-minute window
+        duration = 30 * 60  # 5-minute window
         listofWindows = []
         plottedMask = np.zeros_like(score.ref.mask)
     
-        for event in score.ref.events:
+        for event in score.ref.events +  score.hyp.events :
             # Center the window around the event
             center = event[0] + (event[1] - event[0]) / 2
             window_start = max(0, center - duration / 2)
@@ -297,8 +295,11 @@ class EventPlots:
         for i, window in enumerate(listofWindows):
             ann1 = Annotation(ref.mask[(int(window[0] * ref.fs)):(int(window[1] * ref.fs))], fs = ref.fs)
             ann2 = Annotation(hyp.mask[int(window[0] * hyp.fs):int(window[1] * hyp.fs)], fs = hyp.fs)
+            # print("Hyp: ", hyp.mask[int(window[0] * hyp.fs):int(window[1] * hyp.fs)])
+            # print("Ref: ", ref.mask[int(window[0] * ref.fs):int(window[1] * ref.fs)])
+            
             self.plotEventScoring(ann1, ann2)
-            print(f"Window {i}: {window}")  # Debug print to verify window ranges
+            # print(f"Window {i}: {window}")  # Debug print to verify window ranges
         
         return plt.gcf()
 

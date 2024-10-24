@@ -2,7 +2,7 @@
 '''
 
 import numpy as np
-from .annotation import Annotation
+from asd.event_scoring.annotation import Annotation
 import torch as th
 
 
@@ -94,13 +94,9 @@ class EventScoring(_Scoring):
         self.fs = fs if fs is not None else param.fs
         self.ref = Annotation(ref_mask, self.fs)
         self.hyp = Annotation(hyp_mask, self.fs)
-
-        # Merge events separated by less than param.minDurationBetweenEvents
-        self.ref = EventScoring._mergeNeighbouringEvents(self.ref, param.minDurationBetweenEvents)
-        self.hyp = EventScoring._mergeNeighbouringEvents(self.hyp, param.minDurationBetweenEvents)
         
-        self.ref = EventScoring._convert_isolated_ones(self.ref)
-        self.hyp = EventScoring._convert_isolated_ones(self.hyp)
+        # Apply sliding window
+        self.hyp = EventScoring._applySlidingWindow(self.hyp, window_size=7, threshold=5)        
 
         # Split long events to param.maxEventDuration
         self.ref = EventScoring._splitLongEvents(self.ref, param.maxEventDuration)
@@ -127,27 +123,41 @@ class EventScoring(_Scoring):
                 self.fp += 1
         self.computeScores()
         
-    def _convert_isolated_ones(events: Annotation) -> Annotation:
+    
+    
+    def _applySlidingWindow(annotation: Annotation, window_size: int = 7, threshold: int = 5) -> Annotation:
         """
-        Convert elements in the boolean array that have both left and right neighbors equal to 0 to 0.
+        Apply a sliding window approach where at least 'threshold' out of 'window_size'
+        segments need to be classified as a seizure to mark the entire window as a seizure.
 
         Args:
-            arr (np.ndarray): Input boolean array.
+            annotation (Annotation): The input annotation object with a binary mask.
+            window_size (int): The number of segments in the sliding window. Default is 7.
+            threshold (int): The number of seizure segments needed within the window to classify
+                            the whole window as a seizure. Default is 5 out of 7.
 
         Returns:
-            np.ndarray: Modified array with isolated ones replaced by zeros.
+            Annotation: A new annotation object with the updated mask after applying the sliding window.
         """
-        result = events.mask.copy()
-        # Make sure the input is a 1D numpy array
-        if result.ndim != 1:
-            raise ValueError("Input array must be a 1D array")
+        # Copy the original mask
+        original_mask = annotation.mask.copy()
+        new_mask = np.zeros_like(original_mask)  # Start with a new mask, all zeros
+        
+        num_segments = len(original_mask)
+        
+        # Slide the window across the entire mask
+        for i in range(num_segments - window_size + 1):
+            # Get the current window of size 'window_size'
+            window = original_mask[i:i + window_size]
+            
+            # If 'threshold' or more segments in the window are seizures (1s), classify the window as a seizure
+            if np.sum(window) >= threshold:
+                # Set the entire window to 1 in the new mask
+                new_mask[i:i + window_size] = 1
+        
+        # Create a new Annotation object with the updated mask
+        return Annotation(new_mask, annotation.fs)
 
-        # Process elements from the second to the second-last (ignore the edges)
-        for i in range(1, len(events.mask) - 1):
-            if events.mask[i - 1] == 0 and events.mask[i + 1] == 0:
-                result[i] = 0
-
-        return Annotation(result, events.fs) 
 
     def _splitLongEvents(events: Annotation, maxEventDuration: float) -> Annotation:
         """Split events longer than maxEventDuration in shorter events.
