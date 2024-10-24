@@ -7,7 +7,8 @@ from asd.writer import Writer
 from asd.plots import Plots, EventPlots
 from asd.results import Results, EventResults
 from asd.event_scoring.scoring import EventScoring
-from sklearn.metrics import precision_recall_fscore_support
+from sklearn.metrics import precision_recall_fscore_support, accuracy_score, roc_auc_score
+from asd.event_scoring.annotation import Annotation
 
 
 class Experiment:
@@ -120,8 +121,10 @@ class Experiment:
         # After all predictions are calculated, proceed with the evaluation logic
         # Scoring and evaluation metrics
         scores = EventScoring(all_labels, all_predictions, fs=self.args.eval_sample_rate)
-        self.plots.plotEventScoring(scores.ref, scores.hyp)
-        self.plots.plotIndividualEvents(scores.ref, scores.hyp)
+        ref = Annotation(all_labels, fs=self.args.eval_sample_rate)
+        hyp = Annotation(all_predictions, fs=self.args.eval_sample_rate)
+        self.plots.plotEventScoring(ref, hyp)
+        self.plots.plotIndividualEvents(ref, hyp)
         print("Any-overlap Performance Metrics:")
         print(f"Sensitivity: {scores.sensitivity:.4f}" if not np.isnan(scores.sensitivity) else "Sensitivity: NaN")
         print(f"Precision: {scores.precision:.4f}" if not np.isnan(scores.precision) else "Precision: NaN")

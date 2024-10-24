@@ -1423,9 +1423,9 @@ def process_all_seizure_files(dataset_path, dataset_save_root_path):
     
 if __name__ == "__main__":
     dataset_path = "./data/dataset/train/raw/chb03"
-    dataset_path_single = "./data/dataset/train/raw/chb02"
+    dataset_path_single = "./data/dataset/train/raw/chb05"
 
-    save_root_path = "./data/dataset/chb03_test"
+    save_root_path = "./data/dataset/chb05_test"
 
     #print(f"Files in dataset_path_full: {load_edf_filepaths(dataset_path)}")
     #testing

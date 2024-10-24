@@ -268,7 +268,9 @@ class DARLNetLearner(BaseLearner):
           
         if(self.event_scoring):
             scores = EventScoring(all_labels, all_predictions,  fs=self.args.eval_sample_rate)
-            EventPlots().plotEventScoring(scores.ref, scores.hyp)
+            ref = Annotation(all_labels, fs=self.args.eval_sample_rate)
+            hyp = Annotation(all_predictions, fs=self.args.eval_sample_rate)
+            EventPlots().plotEventScoring(ref, hyp)
             # plotIndividualEvents(ref, hyp)
             results.fp_rates = scores.fpRate
             results.precisions = scores.precision
