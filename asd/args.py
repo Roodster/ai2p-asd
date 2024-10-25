@@ -23,6 +23,8 @@ class Args():
         
         # ===== DATASET =====
         self.patient_id = str(self.config.get("patient_id", 1)).zfill(2)
+        self.val_patient_id = str(self.config.get("val_patient_id", 2)).zfill(2)
+
         self.train_ratio = self.config.get("train_ratio", 0.7)
         self.test_ratio = self.config.get("test_ratio", 0.15)
         
@@ -39,7 +41,6 @@ class Args():
         self.eval_interval = self.config.get("eval_interval", 10)
         self.eval_save_model_interval = self.config.get("eval_save_model_interval", 10)
         self.eval_sample_rate = self.config.get("eval_sample_rate", 1)
-
         
         # ===== PLOTTING =====
 
