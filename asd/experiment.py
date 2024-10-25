@@ -56,7 +56,7 @@ class Experiment:
             self.results = self.learner.step(train_loader, results=self.results, verbose=self.verbose)
             
             if (epoch + 1) % self.eval_interval == 0: 
-                self.results = self.learner.evaluate(dataloader=test_loader, 
+                self.results, best_threshold, best_weights = self.learner.evaluate(dataloader=test_loader, 
                                                     results=self.results, 
                                                     verbose=self.verbose)
                 self.results.epochs = epoch
@@ -73,9 +73,10 @@ class Experiment:
         if self.do_plot:
             self.plots.plot(results=self.results, update=False)
         self.writer.save_statistics(self.results.get())
-
-
-    def evaluate_predictions(self, model, dataloader, threshold=0.5, verbose=False):
+        return best_threshold, best_weights
+    
+    
+    def evaluate_predictions(self, model, dataloader, threshold=0.5, best_model_weights=None, verbose=False):
         model = model.to(self.device)
         model.eval()
         all_labels = []

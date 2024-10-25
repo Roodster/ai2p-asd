@@ -229,6 +229,7 @@ class DARLNetLearner(BaseLearner):
         all_labels = []
         all_predictions = []
         all_raw_outputs = []
+        best_weights = None  # Initialize to store best weights
 
         with th.no_grad():  # Disable gradient computation for evaluation
             for batch_data, batch_labels in dataloader:
@@ -243,8 +244,6 @@ class DARLNetLearner(BaseLearner):
                 # Forward pass: Get predictions from the model
                 outputs = self.model(batch_data)  # Outputs are already in [0, 1] due to sigmoid
 
-                # Handle case where outputs are tuples (e.g., logits, auxiliary outputs)
-
                 # Move outputs back to CPU for further processing
                 outputs = outputs.cpu().numpy()
 
@@ -254,7 +253,7 @@ class DARLNetLearner(BaseLearner):
                 # Compute loss
                 loss = self.compute_loss(y_pred=th.tensor(outputs).to(self.device), y_test=true_labels.long())
                 test_loss += loss.item()
-                
+
         # If event_scoring is True, find the best threshold based on F1-score using scores.f1
         if self.event_scoring:
             best_f1 = 0
@@ -264,19 +263,20 @@ class DARLNetLearner(BaseLearner):
             for threshold in thresholds:
                 # Apply the threshold to raw outputs to get binary predictions
                 predictions = (np.array(all_raw_outputs) > threshold).astype(float)
-                                
+
                 # Calculate scores using your EventScoring class for the current threshold
                 scores = EventScoring(all_labels, predictions, fs=self.args.eval_sample_rate)
 
                 print(f"Threshold: {threshold:.2f}, F1 Score: {scores.f1:.4f}")
 
-                # Keep track of the best threshold based on F1 score
+                # Keep track of the best threshold and save weights if F1 score is higher
                 if scores.f1 >= best_f1:
                     best_f1 = scores.f1
                     best_threshold = threshold
+                    best_weights = self.model.state_dict()  # Save the best weights
                     
             print(f"Best Threshold: {best_threshold:.2f}, F1 Score: {best_f1:.4f}")
-            
+
             # Finalize predictions using the best threshold
             final_predictions = (np.array(all_raw_outputs) > best_threshold).astype(int)
             final_predictions = np.squeeze(final_predictions)  # Ensure predictions are binary and flat
@@ -312,7 +312,10 @@ class DARLNetLearner(BaseLearner):
             results.accuracies = accuracy
 
         results.test_losses = test_loss / len(dataloader)
-        return results
+        
+        # Return results, best threshold, and best weights
+        return results, best_threshold, best_weights
+
 
 
 class AELearner(Learner):
