@@ -54,7 +54,7 @@ class EventScoring(_Scoring):
     class Parameters:
         """Parameters for event scoring"""
 
-        def __init__(self, toleranceStart: float = 32,
+        def __init__(self, toleranceStart: float = 60,
                      toleranceEnd: float = 60,
                      minOverlap: float = 0,
                      maxEventDuration: float = 5 * 60,
