@@ -275,7 +275,7 @@ class DARLNetLearner(BaseLearner):
                     best_f1 = scores.f1
                     best_threshold = threshold
                     
-            print(f"Best Threshold: {best_threshold:.2f}")
+            print(f"Best Threshold: {best_threshold:.2f}, F1 Score: {best_f1:.4f}")
             
             # Finalize predictions using the best threshold
             final_predictions = (np.array(all_raw_outputs) > best_threshold).astype(int)
