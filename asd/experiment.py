@@ -14,7 +14,7 @@ from asd.event_scoring.annotation import Annotation
 class Experiment:
     
     def __init__(self, args, learner=None, results=None, label_transformer=None, do_plot=True, verbose=False, event_scoring=False):
-            # ===== DEPENDENCIES =====
+            # ===== DEPENDNCIES =====
             self.event_scoring=event_scoring
             self.args = args
             self.learner = learner
@@ -75,7 +75,7 @@ class Experiment:
         self.writer.save_statistics(self.results.get())
 
 
-    def evaluate_predictions(self, model, dataloader, verbose=False):
+    def evaluate_predictions(self, model, dataloader, threshold=0.5, verbose=False):
         model = model.to(self.device)
         model.eval()
         all_labels = []
@@ -105,11 +105,9 @@ class Experiment:
 
                 # Convert outputs to class predictions (for binary or multi-class)
                 if len(outputs.shape) == 1:  # Binary classification
-                    outputs = (outputs > 0.5).int()
-
+                    outputs = (outputs > threshold).int()
                 if len(outputs.shape) == 2:  # Multi-class classification
-                    _, outputs = outputs.max(1)
-
+                    outputs = th.tensor([1 if output[1] > threshold else 0 for output in outputs])
                 if verbose:
                     print(f"Shape of processed outputs: {outputs.shape}")
                     print(f'Processed outputs: \n {outputs}')

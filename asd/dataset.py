@@ -102,7 +102,7 @@ class OnlineSegmentsDataset(Dataset):
     
     
 class OfflineSegmentsDataset(Dataset):
-    def __init__(self, root_dir, mode='full', patient_id=None):
+    def __init__(self, root_dir, mode='full', patient_id=None, val_patient_id=None):
         """
         Args:
             root_dir: path to directory
@@ -114,10 +114,10 @@ class OfflineSegmentsDataset(Dataset):
         """
         
         self.root_dir = root_dir
-        self.file_list = self._get_file_list(mode=mode, patient_id=patient_id)
+        self.file_list = self._get_file_list(mode=mode, patient_id=patient_id, val_patient_id=val_patient_id)
         self.data = self._load_data()
 
-    def _get_file_list(self, mode='full', patient_id=None):
+    def _get_file_list(self, mode='full', patient_id=None, val_patient_id=None):
         """
         Generates a list of file paths based on the mode and patient ID.
 
@@ -133,13 +133,17 @@ class OfflineSegmentsDataset(Dataset):
         for root, _, files in os.walk(self.root_dir):
             # Determine if the current directory matches the inclusion/exclusion criteria
             is_patient_dir = patient_id is not None and patient_id in root
-            
+            is_val_patient_dir = val_patient_id is not None and val_patient_id in root
+
             # Filter files based on the mode
             if (mode == 'train' and is_patient_dir):
                 # Skip this directory if it's the patient to be excluded
                 continue
-            
-            elif (mode == 'test' and not is_patient_dir):
+            if (mode == 'train' and is_val_patient_dir):
+                # Skip this directory if it's the patient to be excluded
+                continue
+    
+            elif ((mode == 'test' or mode == 'validation') and not is_patient_dir):
                 # Skip this directory if it doesn't match the patient to include
                 continue
 

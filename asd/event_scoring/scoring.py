@@ -38,6 +38,7 @@ class _Scoring:
 
         # F1 Score
         if np.isnan(self.sensitivity) or np.isnan(self.precision):
+            
             self.f1 = np.nan
         elif (self.sensitivity + self.precision) == 0:  # No overlap ref & hyp
             self.f1 = 0

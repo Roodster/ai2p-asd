@@ -4,6 +4,7 @@ import torch as th
 
 from asd.models.base import BaseModel
     
+    
 class ChannelAttention(nn.Module):
     def __init__(self, in_channels, reduction_ratio=16):
         super(ChannelAttention, self).__init__()
@@ -140,6 +141,7 @@ class DARLNet(BaseModel):
         # Fully connected layers after fusion
         self.fc1 = nn.Linear(512 + 64, 64)  # 512 from GAP, 64 from LSTM
         self.fc2 = nn.Linear(64, 2)  # num_classes = 2
+        self.sigmoid = nn.Sigmoid()
 
     def average_channels(self, data):
         data = data.squeeze(dim=1)
@@ -180,10 +182,8 @@ class DARLNet(BaseModel):
         # Fully connected layers
         fused = self.fc1(fused)  # (B, 256)
         fused = self.dropout(fused)  # Dropout before final layer
-        output = self.fc2(fused)  # (B, num_classes)
+        output = self.sigmoid(self.fc2(fused))  # (B, num_classes)
         return output
-    
-        
     
     
     
