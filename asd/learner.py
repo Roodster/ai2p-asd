@@ -271,7 +271,7 @@ class DARLNetLearner(BaseLearner):
                 print(f"Threshold: {threshold:.2f}, F1 Score: {scores.f1:.4f}")
 
                 # Keep track of the best threshold based on F1 score
-                if scores.f1 > best_f1:
+                if scores.f1 >= best_f1:
                     best_f1 = scores.f1
                     best_threshold = threshold
                     
