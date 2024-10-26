@@ -304,8 +304,6 @@ class EventPlots:
         return plt.gcf()
 
 
-
-
     def _scale_time_xaxis(self, ax: Axes):
         """Scale x axis of a figure where initial values are in seconds."""
         def s2m(x, _):

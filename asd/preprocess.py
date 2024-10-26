@@ -1421,9 +1421,9 @@ def process_all_seizure_files(dataset_path, dataset_save_root_path):
     
 if __name__ == "__main__":
     dataset_path = "./data/dataset/train/raw/chb04"
-    dataset_path_single = "./data/dataset/train/raw/chb05"
-
-    save_root_path = "./data/dataset/chb04_test_overlap"
+    dataset_path_single = "./data/dataset/train/raw/chb24"
+    
+    save_root_path = "./data/dataset/chb24_test_overlap"
 
     #print(f"Files in dataset_path_full: {load_edf_filepaths(dataset_path)}")
     #testing
@@ -1435,9 +1435,10 @@ if __name__ == "__main__":
     # process_all_seizure_files(dataset_path, save_root_path)
 
     # If you want to process all directories
-    process_all_patients(dataset_path, save_root_path)
-    
+    # process_all_patients(dataset_path, save_root_path)
+
+
     # If you want to process a single patient (for test set), use this
-    # process_patient_folder(dataset_path_single, save_root_path)
+    process_patient_folder(dataset_path_single, save_root_path)
     
     # load_npz_files("./data/dataset/parviz_train-15-1blya/full_train/chb03")
