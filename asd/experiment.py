@@ -44,11 +44,15 @@ class Experiment:
             set_seed(args.seed)
         
     def run(self, train_loader, test_loader):
-        assert train_loader is not None, "Please, provide a training dataset :)."        
-        assert test_loader is not None, "Please, provide a test dataset :)."        
-
+        assert train_loader is not None, "Please, provide a training dataset :)."
+        assert test_loader is not None, "Please, provide a test dataset :)."
+        
         self.writer.save_hyperparameters(self.args)
 
+        # Initialize arrays to store thresholds and weights
+        thresholds = []
+        weights = []
+        
         pbar = tqdm(range(self.last_epoch, self.last_epoch + self.n_epochs))
         
         for epoch in pbar:
@@ -56,24 +60,35 @@ class Experiment:
             self.results = self.learner.step(train_loader, results=self.results, verbose=self.verbose)
             
             if (epoch + 1) % self.eval_interval == 0: 
-                self.results, best_threshold, best_weights = self.learner.evaluate(dataloader=test_loader, 
-                                                    results=self.results, 
-                                                    verbose=self.verbose)
+                self.results, current_threshold, current_weights = self.learner.evaluate(
+                    dataloader=test_loader, results=self.results, verbose=self.verbose
+                )
+                # Append current threshold and weights to arrays
+                thresholds.append(current_threshold)
+                weights.append(current_weights)
                 self.results.epochs = epoch
             
             if (epoch + 1) % self.save_model_interval == 0:
-                self.writer.save_model(self.learner.model, epoch+1)        
-        
+                self.writer.save_model(self.learner.model, epoch + 1)
+            
             if self.verbose:
                 self.results.print()
                 
             if self.do_plot:
                 self.plots.plot(results=self.results, update=True)
-    
+        
         if self.do_plot:
             self.plots.plot(results=self.results, update=False)
+        
+        # Save the results statistics
         self.writer.save_statistics(self.results.get())
-        return best_threshold, best_weights
+
+        # Find the index of the highest threshold
+        max_threshold_idx = thresholds.index(max(thresholds))
+        
+        # Return the threshold and weights corresponding to the highest threshold
+        return thresholds[max_threshold_idx], weights[max_threshold_idx]
+
     
     
     def evaluate_predictions(self, model, dataloader, threshold=0.5, best_model_weights=None, verbose=False):
