@@ -205,12 +205,6 @@ class EventPlots:
         ax.plot(time, ref.mask * 0.4 + 0.6, 'k')
         ax.plot(time, hyp.mask * 0.4 + 0.1, 'k')
         
-        # Plot splitting of events
-        for event in ref.events:
-            self._plotSplitLongEvents(event, param.maxEventDuration, [0.6, 1])
-        for event in hyp.events:
-            self._plotSplitLongEvents(event, param.maxEventDuration, [0.1, 0.5])
-
         # Initialize lines for legend
         lineTp, = ax.plot([], [], color='tab:green', linewidth=5)
         lineFn, = ax.plot([], [], color='tab:purple', linewidth=5)

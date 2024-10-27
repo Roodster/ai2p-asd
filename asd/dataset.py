@@ -100,7 +100,107 @@ class OnlineSegmentsDataset(Dataset):
         label = torch.from_numpy(npz_file['y'].astype(np.float32))        
         return segment, label
     
+
+
+
+class OfflineSegmentsDataset4(Dataset):
+    def __init__(self, root_dir, mode='full', patient_id=None, val_patient_id=None):
+        """
+        Args:
+            root_dir: path to directory
+            modes: 
+                'full': uses data from all patients.
+                'train': exclude data from given id
+                'test': only include data from given id
+            id: patient id to include/exlude data. Depends on mode.
+        """
+        
+        self.root_dir = root_dir
+        self.file_list = self._get_file_list(mode=mode, patient_id=patient_id, val_patient_id=val_patient_id)
+        self.data = self._load_data()
+
+    def _get_file_list(self, mode='full', patient_id=None, val_patient_id=None):
+        """
+        Generates a list of file paths based on the mode and patient ID.
+
+        Args:
+            mode (str): Mode to specify the dataset type ('full', 'train', 'test').
+            patient_id (str): Patient ID to include/exclude based on the mode.
+
+        Returns:
+            list: List of file paths matching the mode and patient ID criteria.
+        """
+        file_list = []
+        
+        for root, _, files in os.walk(self.root_dir):
+            # Determine if the current directory matches the inclusion/exclusion criteria
+            is_patient_dir = patient_id is not None and patient_id in root
+            is_val_patient_dir = val_patient_id is not None and val_patient_id in root
+
+            # Filter files based on the mode
+            if (mode == 'train' and is_patient_dir):
+                continue
+            if (mode == 'train' and is_val_patient_dir):
+                continue
+            elif ((mode == 'test' or mode == 'validation') and not is_patient_dir):
+                continue
+
+            # Add .npz files from the appropriate directories
+            for file in files:
+                if file.endswith('.npz'):
+                    file_list.append(os.path.join(root, file))
+        
+        # Separate files into _1 and _2 groups based on the file naming convention
+        files_1 = [f for f in file_list if '_1_' in f]
+        files_2 = [f for f in file_list if '_2_' in f]
+
+        # Sort each group based on the last number in the filename
+        sorted_files_1 = sorted(files_1, key=lambda x: int(re.findall(r'\d+', x)[-1]))
+        sorted_files_2 = sorted(files_2, key=lambda x: int(re.findall(r'\d+', x)[-1]))
+
+        # Concatenate sorted lists with _1 files first, then _2 files
+        return sorted_files_1 + sorted_files_2
+
+    def _load_data(self):
+        """
+        Loads all data into RAM during initialization.
+
+        Returns:
+            list: A list of tuples where each tuple contains a segment tensor and a label tensor.
+        """
+        data = []
+        pbar = tqdm(self.file_list)
+        pbar.set_description("Loading dataset...")
+        for file_path in pbar:
+            npz_file = np.load(file_path, allow_pickle=True)
+            segment = torch.from_numpy(npz_file['x'].astype(np.float32))
+                        
+            if len(segment.shape)== 2:
+                segment = segment.reshape(1, segment.shape[0], segment.shape[1]) 
+                
+            label = torch.from_numpy(npz_file['y'].astype(np.float32))
+            data.append((segment, label))
+
+        return data
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, idx):
+        """
+        Returns the segment, label, and loading time for the specified index.
+
+        Args:
+            idx (int): Index of the data to retrieve.
+
+        Returns:
+            tuple: (segment, label, load_time)
+        """
+        segment, label = self.data[idx]
+        
+        return segment, label
     
+        
 class OfflineSegmentsDataset(Dataset):
     def __init__(self, root_dir, mode='full', patient_id=None, val_patient_id=None):
         """

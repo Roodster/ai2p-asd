@@ -58,7 +58,7 @@ class EventScoring(_Scoring):
                      toleranceEnd: float = 60,
                      minOverlap: float = 0,
                      maxEventDuration: float = 100 * 60, # No limit
-                     minDurationBetweenEvents: float = 8,
+                     minDurationBetweenEvents: float = 90,
                      sampling_rate: int = 1
                      ):
             """Parameters for event scoring
@@ -99,6 +99,8 @@ class EventScoring(_Scoring):
         # Apply sliding window
         self.hyp = EventScoring._applySlidingWindow(self.hyp, window_size=7, threshold=5)        
 
+        self.ref = EventScoring._mergeNeighbouringEvents(self.ref, param.minDurationBetweenEvents)
+        self.hyp = EventScoring._mergeNeighbouringEvents(self.hyp, param.minDurationBetweenEvents)
         # Split long events to param.maxEventDuration
         # self.ref = EventScoring._splitLongEvents(self.ref, param.maxEventDuration)
         # self.hyp = EventScoring._splitLongEvents(self.hyp, param.maxEventDuration)
