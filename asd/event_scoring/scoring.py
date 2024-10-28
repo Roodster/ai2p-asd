@@ -46,7 +46,7 @@ class _Scoring:
             self.f1 = 2 * self.sensitivity * self.precision / (self.sensitivity + self.precision)
 
         # FP Rate
-        self.fpRate = self.fp / (self.numSamples / self.fs / 3600 / 24)  # FP per day
+        self.fpRate = self.fp / (self.numSamples / self.fs / 3600 / 24) * 2 # FP per day
 
 
 class EventScoring(_Scoring):

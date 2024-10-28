@@ -196,7 +196,7 @@ class EventPlots:
         """Build an overview plot showing the outcome of event scoring.
            If an axes is provided, plots on that axes, else creates a new figure."""
         score = EventScoring(ref.mask, hyp.mask, param, fs = ref.fs)
-        time = np.arange(len(ref.mask)) / ref.fs
+        time = np.arange(len(ref.mask)) / ref.fs / 2
         if ax is None:
             plt.figure(figsize=(16, 3))
             ax = plt.axes()
@@ -272,8 +272,8 @@ class EventPlots:
         for event in score.ref.events +  score.hyp.events :
             # Center the window around the event
             center = event[0] + (event[1] - event[0]) / 2
-            window_start = max(0, center - duration / 2)
-            window_end = min(len(plottedMask) / score.fs, center + duration / 2)
+            window_start = max(0, center - duration / 2) / 2
+            window_end = min(len(plottedMask) / score.fs, center + duration / 2) / 2
             window = (window_start, window_end)
     
             # Ensure this event hasn't been plotted before
