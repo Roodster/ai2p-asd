@@ -196,14 +196,14 @@ class EventPlots:
         """Build an overview plot showing the outcome of event scoring.
            If an axes is provided, plots on that axes, else creates a new figure."""
         score = EventScoring(ref.mask, hyp.mask, param, fs = ref.fs)
-        time = np.arange(len(ref.mask)) / ref.fs / 2
+        time = np.arange(len(ref.mask)) / ref.fs
         if ax is None:
             plt.figure(figsize=(16, 3))
             ax = plt.axes()
 
         # Plot Labels
-        ax.plot(time, ref.mask * 0.4 + 0.6, 'k')
-        ax.plot(time, hyp.mask * 0.4 + 0.1, 'k')
+        ax.plot(time / 2, ref.mask * 0.4 + 0.6, 'k')
+        ax.plot(time / 2, hyp.mask * 0.4 + 0.1, 'k')
         
         # Initialize lines for legend
         lineTp, = ax.plot([], [], color='tab:green', linewidth=5)
@@ -219,7 +219,7 @@ class EventPlots:
                 color = 'tab:purple'
             self._plotEvent([event[0], event[1] - (1 / ref.fs)], [1, 1], color, ax,
                             [max(0, event[0] - param.toleranceStart), min(time[-1], event[1] + param.toleranceEnd - (1 / ref.fs))])
-
+            
         # Plot HYP TP & FP
         for event in score.hyp.events:
             # FP
