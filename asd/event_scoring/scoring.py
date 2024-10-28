@@ -59,7 +59,7 @@ class EventScoring(_Scoring):
                      minOverlap: float = 0,
                      maxEventDuration: float = 100 * 60, # No limit
                      minDurationBetweenEvents: float = 90,
-                     sampling_rate: int = 1
+                     sampling_rate: float = 0.5
                      ):
             """Parameters for event scoring
 
@@ -82,7 +82,7 @@ class EventScoring(_Scoring):
             self.minDurationBetweenEvents = minDurationBetweenEvents
             self.fs = sampling_rate # Operate at a time precision of 256 Hz
 
-    def __init__(self, ref_mask, hyp_mask, param: Parameters = Parameters(), fs: int = None):
+    def __init__(self, ref_mask, hyp_mask, param: Parameters = Parameters(), fs: float = None):
         """Computes a scoring on an event basis.
 
         Args:

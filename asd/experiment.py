@@ -63,12 +63,12 @@ class Experiment:
                 self.results, current_threshold, current_weights = self.learner.evaluate(
                     dataloader=test_loader, results=self.results, verbose=self.verbose
                 )
-                if(count >= 5):
+                if(count >= 10):
                     # Append current threshold and weights to arrays
                     thresholds.append(current_threshold)
                     weights.append(current_weights)
                 self.results.epochs = epoch
-            
+                count += 1
             if (epoch + 1) % self.save_model_interval == 0:
                 self.writer.save_model(self.learner.model, epoch + 1)
             
@@ -92,7 +92,7 @@ class Experiment:
 
     
     
-    def evaluate_predictions(self, model, dataloader, threshold=0.5, best_model_weights=None, verbose=False):
+    def evaluate_predictions(self, model, dataloader, threshold=0.5, verbose=False):
         model = model.to(self.device)
         model.eval()
         all_labels = []
