@@ -232,8 +232,8 @@ class OfflineSegmentsDataset(Dataset):
         
         for root, _, files in os.walk(self.root_dir):
             # Determine if the current directory matches the inclusion/exclusion criteria
-            is_patient_dir = patient_id is not None and patient_id in root
-            is_val_patient_dir = val_patient_id is not None and val_patient_id in root
+            is_patient_dir = patient_id is not None and patient_id in root[-10:]
+            is_val_patient_dir = val_patient_id is not None and val_patient_id in root[-10:]
 
             # Filter files based on the mode
             if (mode == 'train' and is_patient_dir):

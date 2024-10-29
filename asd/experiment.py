@@ -9,6 +9,7 @@ from asd.results import Results, EventResults
 from asd.event_scoring.scoring import EventScoring
 from sklearn.metrics import precision_recall_fscore_support, accuracy_score, roc_auc_score
 from asd.event_scoring.annotation import Annotation
+import scipy
 
 
 class Experiment:
@@ -157,3 +158,79 @@ class Experiment:
         print(f"Sensitivity (Recall): {overall_recall}")
         print(f"F1 Score: {overall_f1}")
         print(f"Accuracy: {accuracy}")
+
+
+
+    def evaluate_predictions_transformer(self, model, dataloader, threshold=0.5, verbose=False):
+            model = model.to(self.device)
+            model.eval()
+            all_labels = []
+            all_predictions = []
+
+            with th.no_grad():
+                for batch_data, batch_labels in dataloader:
+                    batch_data, batch_labels = batch_data.to(self.device), batch_labels.to(self.device)
+                    B, _, seq_len = batch_data.shape  # B: batch size, 4: channels, 1024: original sequence length
+                    # 1. Reshape `batch_data` to the new shape (B * 4, 4, 256)
+                    batch_data = batch_data.reshape(B, 4, 4, 256).permute(0, 2, 1, 3).reshape(B * 4, 4, 256)
+                    # 2. Expand `batch_labels` to match the new batch size of `batch_data` (B * 4)
+                    batch_labels = batch_labels.unsqueeze(1).repeat(1, 4).reshape(B * 4)
+                    downsample_factor = self.original_sr // self.down_sr
+                    downsampled_data = scipy.signal.decimate(batch_data, downsample_factor, axis=-1, zero_phase=True)
+                    
+                    true_labels = batch_labels.detach().clone()
+
+                    if verbose:
+                        print(f"Shape of batch_data: {batch_data.shape}")
+                        print(f"Shape of batch_labels: {batch_labels.shape}")
+
+                    # Get model predictions
+                    outputs = model(downsampled_data).to(self.device)
+                    
+                    if verbose:
+                        print(f"Shape of outputs: {outputs.shape}")
+                        print(f'Outputs: \n {outputs}')
+
+                    # Apply label transformer if present
+                    if self.label_transformer is not None:
+                        true_labels = self.label_transformer(batch_labels)
+                        if verbose:
+                            print(f"Shape of labels after transformation: {true_labels.shape}")
+
+                    # Convert outputs to class predictions (for binary or multi-class)
+                    if len(outputs.shape) == 1:  # Binary classification
+                        outputs = (outputs > threshold).int()
+                    if len(outputs.shape) == 2:  # Multi-class classification
+                        outputs = th.tensor([1 if output[1] > threshold else 0 for output in outputs])
+                    if verbose:
+                        print(f"Shape of processed outputs: {outputs.shape}")
+                        print(f'Processed outputs: \n {outputs}')
+
+                    # Collect all predictions and labels
+                    all_labels.extend(batch_labels.cpu().numpy())
+                    all_predictions.extend(outputs.cpu().numpy())
+
+            # After all predictions are calculated, proceed with the evaluation logic
+            # Scoring and evaluation metrics
+            scores = EventScoring(all_labels, all_predictions, fs=self.args.eval_sample_rate)
+            ref = Annotation(all_labels, fs=self.args.eval_sample_rate)
+            hyp = Annotation(all_predictions, fs=self.args.eval_sample_rate)
+            self.plots.plotEventScoring(ref, hyp)
+            self.plots.plotIndividualEvents(ref, hyp)
+            print("Any-overlap Performance Metrics:")
+            print(f"Sensitivity: {scores.sensitivity:.4f}" if not np.isnan(scores.sensitivity) else "Sensitivity: NaN")
+            print(f"Precision: {scores.precision:.4f}" if not np.isnan(scores.precision) else "Precision: NaN")
+            print(f"F1 Score: {scores.f1:.4f}" if not np.isnan(scores.f1) else "F1 Score: NaN")
+            print(f"False Positive Rate (FP/day): {scores.fpRate:.4f}")
+
+            # Calculate overall metrics
+            accuracy = accuracy_score(scores.ref.mask, scores.hyp.mask)
+            auc = roc_auc_score(scores.ref.mask, scores.hyp.mask, average='macro')
+            overall_precision, overall_recall, overall_f1, _ = precision_recall_fscore_support(scores.ref.mask, scores.hyp.mask, average='macro')
+            
+            print("Segment based evaluation:")
+            print(f"AUC: {auc}")
+            print(f"Precision: {overall_precision}")
+            print(f"Sensitivity (Recall): {overall_recall}")
+            print(f"F1 Score: {overall_f1}")
+            print(f"Accuracy: {accuracy}")
