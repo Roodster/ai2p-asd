@@ -147,9 +147,9 @@ class Experiment:
         print(f"False Positive Rate (FP/day): {scores.fpRate:.4f}")
 
         # Calculate overall metrics
-        accuracy = accuracy_score(all_labels, all_predictions)
-        auc = roc_auc_score(all_labels, all_predictions, average='macro')
-        overall_precision, overall_recall, overall_f1, _ = precision_recall_fscore_support(all_labels, all_predictions, average='macro')
+        accuracy = accuracy_score(scores.ref.mask, scores.hyp.mask)
+        auc = roc_auc_score(scores.ref.mask, scores.hyp.mask, average='macro')
+        overall_precision, overall_recall, overall_f1, _ = precision_recall_fscore_support(scores.ref.mask, scores.hyp.mask, average='macro')
         
         print("Segment based evaluation:")
         print(f"AUC: {auc}")

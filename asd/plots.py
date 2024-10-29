@@ -272,9 +272,9 @@ class EventPlots:
     
         for event in score.ref.events +  score.hyp.events :
             # Center the window around the event
-            center = event[0] + (event[1] - event[0]) / 2
-            window_start = max(0, center - duration / 2) / 2
-            window_end = min(len(plottedMask) / score.fs, center + duration / 2) / 2
+            center = event[0] + (event[1] - event[0]) 
+            window_start = max(0, center - duration / 2) 
+            window_end = min(len(plottedMask) / score.fs, center + duration / 2) 
             window = (window_start, window_end)
     
             # Ensure this event hasn't been plotted before
