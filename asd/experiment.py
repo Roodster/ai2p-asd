@@ -88,7 +88,7 @@ class Experiment:
         max_threshold_idx = thresholds.index(max(thresholds))
         
         # Return the threshold and weights corresponding to the highest threshold
-        return thresholds[max_threshold_idx], weights[max_threshold_idx]
+        return thresholds[-1], weights[-1]
 
     
     
