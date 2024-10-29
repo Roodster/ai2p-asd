@@ -170,14 +170,14 @@ class Experiment:
             with th.no_grad():
                 for batch_data, batch_labels in dataloader:
                     batch_data, batch_labels = batch_data.to(self.device), batch_labels.to(self.device)
+                    batch_data = batch_data.squeeze(1)  # Remove the second dimension if its size is 1
                     B, _, seq_len = batch_data.shape  # B: batch size, 4: channels, 1024: original sequence length
                     # 1. Reshape `batch_data` to the new shape (B * 4, 4, 256)
                     batch_data = batch_data.reshape(B, 4, 4, 256).permute(0, 2, 1, 3).reshape(B * 4, 4, 256)
-                    # 2. Expand `batch_labels` to match the new batch size of `batch_data` (B * 4)
-                    batch_labels = batch_labels.unsqueeze(1).repeat(1, 4).reshape(B * 4)
-                    downsample_factor = self.original_sr // self.down_sr
-                    downsampled_data = scipy.signal.decimate(batch_data, downsample_factor, axis=-1, zero_phase=True)
-                    
+                    downsample_factor = 4
+                    downsampled_data = scipy.signal.decimate(batch_data.cpu().numpy(), downsample_factor, axis=-1, zero_phase=True)
+                    downsampled_data = th.from_numpy(downsampled_data.copy()).to(batch_data.device)
+                    downsampled_data = downsampled_data.unsqueeze(1)  # Remove the second dimension if its size is 1
                     true_labels = batch_labels.detach().clone()
 
                     if verbose:
@@ -191,12 +191,6 @@ class Experiment:
                         print(f"Shape of outputs: {outputs.shape}")
                         print(f'Outputs: \n {outputs}')
 
-                    # Apply label transformer if present
-                    if self.label_transformer is not None:
-                        true_labels = self.label_transformer(batch_labels)
-                        if verbose:
-                            print(f"Shape of labels after transformation: {true_labels.shape}")
-
                     # Convert outputs to class predictions (for binary or multi-class)
                     if len(outputs.shape) == 1:  # Binary classification
                         outputs = (outputs > threshold).int()
@@ -205,8 +199,13 @@ class Experiment:
                     if verbose:
                         print(f"Shape of processed outputs: {outputs.shape}")
                         print(f'Processed outputs: \n {outputs}')
-
+                    outputs = outputs[:outputs.size(0) // 4 * 4].view(-1, 4)
+                    # Sum along the rows and apply the condition: set to 1 if the sum is greater than 1, else 0
+                    outputs = (outputs.sum(dim=1) > 1).int()
                     # Collect all predictions and labels
+                    if verbose:
+                        print(f"Shape of processed outputs: {outputs.shape}")
+                        print(f"Shape of truth: {batch_labels.shape}")
                     all_labels.extend(batch_labels.cpu().numpy())
                     all_predictions.extend(outputs.cpu().numpy())
 
