@@ -216,20 +216,21 @@ class Experiment:
             hyp = Annotation(all_predictions, fs=self.args.eval_sample_rate)
             self.plots.plotEventScoring(ref, hyp)
             self.plots.plotIndividualEvents(ref, hyp)
+
             print("Any-overlap Performance Metrics:")
-            print(f"Sensitivity: {scores.sensitivity:.4f}" if not np.isnan(scores.sensitivity) else "Sensitivity: NaN")
-            print(f"Precision: {scores.precision:.4f}" if not np.isnan(scores.precision) else "Precision: NaN")
-            print(f"F1 Score: {scores.f1:.4f}" if not np.isnan(scores.f1) else "F1 Score: NaN")
-            print(f"False Positive Rate (FP/day): {scores.fpRate:.4f}")
+            print(f"Sensitivity: {scores.sensitivity:.3f}" if not np.isnan(scores.sensitivity) else "Sensitivity: NaN")
+            print(f"Precision: {scores.precision:.3f}" if not np.isnan(scores.precision) else "Precision: NaN")
+            print(f"F1 Score: {scores.f1:.3f}" if not np.isnan(scores.f1) else "F1 Score: NaN")
+            print(f"False Positive Rate (FP/day): {scores.fpRate:.3f}")
 
             # Calculate overall metrics
             accuracy = accuracy_score(scores.ref.mask, scores.hyp.mask)
             auc = roc_auc_score(scores.ref.mask, scores.hyp.mask, average='macro')
             overall_precision, overall_recall, overall_f1, _ = precision_recall_fscore_support(scores.ref.mask, scores.hyp.mask, average='macro')
-            
+
             print("Segment based evaluation:")
-            print(f"AUC: {auc}")
-            print(f"Precision: {overall_precision}")
-            print(f"Sensitivity (Recall): {overall_recall}")
-            print(f"F1 Score: {overall_f1}")
-            print(f"Accuracy: {accuracy}")
+            print(f"AUC: {auc:.3f}")
+            print(f"Precision: {overall_precision:.3f}")
+            print(f"Sensitivity (Recall): {overall_recall:.3f}")
+            print(f"F1 Score: {overall_f1:.3f}")
+            print(f"Accuracy: {accuracy:.3f}")

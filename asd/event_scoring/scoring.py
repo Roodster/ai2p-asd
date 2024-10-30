@@ -97,7 +97,7 @@ class EventScoring(_Scoring):
         self.hyp = Annotation(hyp_mask, self.fs)
         
         # Apply sliding window
-        self.hyp = EventScoring._applySlidingWindow(self.hyp, window_size=7, threshold=5)        
+        self.hyp = EventScoring._applySlidingWindow(self.hyp, window_size=7, threshold=4)        
 
         self.ref = EventScoring._mergeNeighbouringEvents(self.ref, param.minDurationBetweenEvents)
         self.hyp = EventScoring._mergeNeighbouringEvents(self.hyp, param.minDurationBetweenEvents)
