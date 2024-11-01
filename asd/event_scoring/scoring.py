@@ -38,6 +38,7 @@ class _Scoring:
 
         # F1 Score
         if np.isnan(self.sensitivity) or np.isnan(self.precision):
+            
             self.f1 = np.nan
         elif (self.sensitivity + self.precision) == 0:  # No overlap ref & hyp
             self.f1 = 0
@@ -45,7 +46,7 @@ class _Scoring:
             self.f1 = 2 * self.sensitivity * self.precision / (self.sensitivity + self.precision)
 
         # FP Rate
-        self.fpRate = self.fp / (self.numSamples / self.fs / 3600 / 24)  # FP per day
+        self.fpRate = self.fp / (self.numSamples / self.fs / 3600 / 24) # FP per day
 
 
 class EventScoring(_Scoring):
@@ -56,9 +57,9 @@ class EventScoring(_Scoring):
         def __init__(self, toleranceStart: float = 60,
                      toleranceEnd: float = 60,
                      minOverlap: float = 0,
-                     maxEventDuration: float = 5 * 60,
-                     minDurationBetweenEvents: float = 8,
-                     sampling_rate: int = 1
+                     maxEventDuration: float = 100 * 60, # No limit
+                     minDurationBetweenEvents: float = 90,
+                     sampling_rate: float = 0.5
                      ):
             """Parameters for event scoring
 
@@ -81,7 +82,7 @@ class EventScoring(_Scoring):
             self.minDurationBetweenEvents = minDurationBetweenEvents
             self.fs = sampling_rate # Operate at a time precision of 256 Hz
 
-    def __init__(self, ref_mask, hyp_mask, param: Parameters = Parameters(), fs: int = None):
+    def __init__(self, ref_mask, hyp_mask, param: Parameters = Parameters(), fs: float = None):
         """Computes a scoring on an event basis.
 
         Args:
@@ -98,9 +99,11 @@ class EventScoring(_Scoring):
         # Apply sliding window
         self.hyp = EventScoring._applySlidingWindow(self.hyp, window_size=7, threshold=5)        
 
+        self.ref = EventScoring._mergeNeighbouringEvents(self.ref, param.minDurationBetweenEvents)
+        self.hyp = EventScoring._mergeNeighbouringEvents(self.hyp, param.minDurationBetweenEvents)
         # Split long events to param.maxEventDuration
-        self.ref = EventScoring._splitLongEvents(self.ref, param.maxEventDuration)
-        self.hyp = EventScoring._splitLongEvents(self.hyp, param.maxEventDuration)
+        # self.ref = EventScoring._splitLongEvents(self.ref, param.maxEventDuration)
+        # self.hyp = EventScoring._splitLongEvents(self.hyp, param.maxEventDuration)
 
         self.numSamples = len(self.ref.mask)
         self.refTrue = len(self.ref.events)

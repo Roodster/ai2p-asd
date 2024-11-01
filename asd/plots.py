@@ -205,27 +205,22 @@ class EventPlots:
         ax.plot(time, ref.mask * 0.4 + 0.6, 'k')
         ax.plot(time, hyp.mask * 0.4 + 0.1, 'k')
         
-        # Plot splitting of events
-        for event in ref.events:
-            self._plotSplitLongEvents(event, param.maxEventDuration, [0.6, 1])
-        for event in hyp.events:
-            self._plotSplitLongEvents(event, param.maxEventDuration, [0.1, 0.5])
-
         # Initialize lines for legend
         lineTp, = ax.plot([], [], color='tab:green', linewidth=5)
         lineFn, = ax.plot([], [], color='tab:purple', linewidth=5)
         lineFp, = ax.plot([], [], color='tab:red', linewidth=5)
 
+
         # Plot REF TP & FN
         for event in score.ref.events:
             # TP
-            if np.any(score.tpMask[round(event[0] * score.fs):round(event[1] * score.fs)]):
+            if np.any(score.tpMask[round((event[0]) * score.fs):round((event[1]) * score.fs)]):
                 color = 'tab:green'
             else:
                 color = 'tab:purple'
-            self._plotEvent([event[0], event[1] - (1 / ref.fs)], [1, 1], color, ax,
-                            [max(0, event[0] - param.toleranceStart), min(time[-1], event[1] + param.toleranceEnd - (1 / ref.fs))])
-
+            self._plotEvent([event[0], (event[1]) - (1 / ref.fs)], [1, 1], color, ax,
+                            [max(0, (event[0]) - param.toleranceStart), min(time[-1], event[1] + param.toleranceEnd - (1 / ref.fs))])
+            
         # Plot HYP TP & FP
         for event in score.hyp.events:
             # FP
@@ -271,15 +266,15 @@ class EventPlots:
         score = EventScoring(ref.mask, hyp.mask, param, ref.fs)
     
         # Get list of windows to plot (windows are 5 minutes long centered around events)
-        duration = 30 * 60  # 5-minute window
+        duration = 15 * 60  # 30-minute window
         listofWindows = []
         plottedMask = np.zeros_like(score.ref.mask)
     
         for event in score.ref.events +  score.hyp.events :
             # Center the window around the event
-            center = event[0] + (event[1] - event[0]) / 2
-            window_start = max(0, center - duration / 2)
-            window_end = min(len(plottedMask) / score.fs, center + duration / 2)
+            center = event[0] + (event[1] - event[0]) 
+            window_start = max(0, center - duration / 2) 
+            window_end = min(len(plottedMask) / score.fs, center + duration / 2) 
             window = (window_start, window_end)
     
             # Ensure this event hasn't been plotted before
@@ -300,10 +295,7 @@ class EventPlots:
             
             self.plotEventScoring(ann1, ann2)
             # print(f"Window {i}: {window}")  # Debug print to verify window ranges
-        
         return plt.gcf()
-
-
 
 
     def _scale_time_xaxis(self, ax: Axes):

@@ -1333,12 +1333,13 @@ def process_patient_folder(patient_folder, save_root):
     pipeline = Pipeline([('filters', BandpassFilter(sfreq=256, lowcut=1, highcut=40, order=6)),
                         #  ('down sampling', MeanDownSampling(down_freq=64, sfreq=256)),
                          ('normalizes', ZScoreNormalization()),
-                         ('segments', SegmentSignals(fs=256, segment_length=4, overlap=0)),
+                         ('segments', SegmentSignals(fs=256, segment_length=4, overlap=2)),
                         #  ('drop', Pre_Post_Drop()),
                         #  ('sample', RatioPseudoUniformSampling(ratio=15, num_blocks=1000))
                          ]) 
-
     X, y = pipeline.transform(X=(combined_eeg_data, combined_labels))
+    
+    
     print(f"Transformed data shape for {os.path.basename(patient_folder)}: {X.shape}")
     print(f"Transformed labels shape for {os.path.basename(patient_folder)}: {y.shape}")
 
@@ -1367,9 +1368,6 @@ def process_all_patients(dataset_path, save_root_path):
             process_patient_folder(full_patient_path, save_root_path)
 
     
-    
-
-
 # This function uses the previous approach, where only data from files with .seizure file are segmented. 
 # Also pipeline is applied per file instead of applying it once when all data is concatenated. 
 def process_seizure_files(dataset_path, dataset_save_root_path):
@@ -1422,10 +1420,10 @@ def process_all_seizure_files(dataset_path, dataset_save_root_path):
             process_seizure_files(full_patient_path, dataset_save_root_path)
     
 if __name__ == "__main__":
-    dataset_path = "./data/dataset/train/raw/chb03"
-    dataset_path_single = "./data/dataset/train/raw/chb05"
-
-    save_root_path = "./data/dataset/chb05_test"
+    dataset_path = "./data/dataset/train/raw/chb04"
+    dataset_path_single = "./data/dataset/train/raw/chb24"
+    
+    save_root_path = "./data/dataset/chb24_test_overlap"
 
     #print(f"Files in dataset_path_full: {load_edf_filepaths(dataset_path)}")
     #testing
@@ -1438,7 +1436,8 @@ if __name__ == "__main__":
 
     # If you want to process all directories
     # process_all_patients(dataset_path, save_root_path)
-    
+
+
     # If you want to process a single patient (for test set), use this
     process_patient_folder(dataset_path_single, save_root_path)
     

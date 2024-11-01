@@ -221,57 +221,71 @@ class DARLNetLearner(BaseLearner):
 
         results.train_losses = train_loss / len(data_loader)
         return results
-    
+
     
     def evaluate(self, dataloader, results, verbose=False):
-        self.model.eval()
+        self.model.eval()  # Set model to evaluation mode
         test_loss = 0.0
         all_labels = []
         all_predictions = []
+        all_raw_outputs = []
+        best_weights = None  # Initialize to store best weights
 
-        with th.no_grad():
+        with th.no_grad():  # Disable gradient computation for evaluation
             for batch_data, batch_labels in dataloader:
                 batch_data, batch_labels = batch_data.to(self.device), batch_labels.to(self.device)
-                
+
                 true_labels = batch_labels.detach().clone()
-                
+
                 if verbose:
                     print(f"Shape of batch_data: {batch_data.shape}")
                     print(f"Shape of batch_labels: {batch_labels.shape} ")
-                
-                outputs = self.predict(batch_data)
-                
-                if verbose:
-                    print(f"Shape of outputs: {outputs.shape}")
-                    print(f'Outputs: \n {outputs}')
-                if self.label_transformer != None:
-                    true_labels = self.label_transformer(batch_labels)
-                    if verbose:
-                        print(f"Shape of labels: {true_labels.shape}")  
-                
-        
-                loss = self.compute_loss(y_pred=outputs, y_test=true_labels.long())
+
+                # Forward pass: Get predictions from the model
+                outputs = self.model(batch_data)  # Outputs are already in [0, 1] due to sigmoid
+
+                # Move outputs back to CPU for further processing
+                outputs = outputs.cpu().numpy()
+
+                all_raw_outputs.extend([row[1] for row in outputs])
+                all_labels.extend(batch_labels.cpu().numpy())  # Collect true labels
+
+                # Compute loss
+                loss = self.compute_loss(y_pred=th.tensor(outputs).to(self.device), y_test=true_labels.long())
                 test_loss += loss.item()
 
-                if len(outputs.shape) == 1:
-                    outputs = (outputs > 0.5).int()
+        # If event_scoring is True, find the best threshold based on F1-score using scores.f1
+        if self.event_scoring:
+            best_f1 = 0
+            best_threshold = 0.5
+            thresholds = np.arange(0.1, 1.0, 0.05)  # Range of thresholds to evaluate
 
-                if len(outputs.shape) == 2:
-                    _, outputs = outputs.max(1)
-    
-                if verbose:
-                    print(f"Shape of outputs: {outputs.shape}")
-                    print(f'Outputs: \n {outputs}')
+            for threshold in thresholds:
+                # Apply the threshold to raw outputs to get binary predictions
+                predictions = (np.array(all_raw_outputs) > threshold).astype(float)
+
+                # Calculate scores using your EventScoring class for the current threshold
+                scores = EventScoring(all_labels, predictions, fs=self.args.eval_sample_rate)
+
+                print(f"Threshold: {threshold:.2f}, F1 Score: {scores.f1:.4f}")
+
+                # Keep track of the best threshold and save weights if F1 score is higher
+                if scores.f1 >= best_f1:
+                    best_f1 = scores.f1
+                    best_threshold = threshold
+                    best_weights = self.model.state_dict()  # Save the best weights
                     
-                all_labels.extend(batch_labels.cpu().numpy())
-                all_predictions.extend(outputs.cpu().numpy())
-          
-        if(self.event_scoring):
-            scores = EventScoring(all_labels, all_predictions,  fs=self.args.eval_sample_rate)
+            print(f"Best Threshold: {best_threshold:.2f}, F1 Score: {best_f1:.4f}")
+
+            # Finalize predictions using the best threshold
+            final_predictions = (np.array(all_raw_outputs) > best_threshold).astype(int)
+            final_predictions = np.squeeze(final_predictions)  # Ensure predictions are binary and flat
+
+            # Calculate final event scoring metrics based on the best threshold
+            scores = EventScoring(all_labels, final_predictions, fs=self.args.eval_sample_rate)
             ref = Annotation(all_labels, fs=self.args.eval_sample_rate)
-            hyp = Annotation(all_predictions, fs=self.args.eval_sample_rate)
+            hyp = Annotation(final_predictions, fs=self.args.eval_sample_rate)
             EventPlots().plotEventScoring(ref, hyp)
-            # plotIndividualEvents(ref, hyp)
             results.fp_rates = scores.fpRate
             results.precisions = scores.precision
             results.sensitivities = scores.sensitivity
@@ -281,21 +295,28 @@ class DARLNetLearner(BaseLearner):
             print(f"Precision: {scores.precision:.4f}" if not np.isnan(scores.precision) else "Precision: NaN")
             print(f"F1 Score: {scores.f1:.4f}" if not np.isnan(scores.f1) else "F1 Score: NaN")
             print(f"False Positive Rate (FP/day): {scores.fpRate:.4f}")
-            
+
         else:
+            # Use default threshold (0.5) for binary classification if event_scoring is False
+            final_predictions = (np.array(all_raw_outputs) > 0.5).astype(int)
+            final_predictions = np.squeeze(final_predictions)  # Ensure predictions are binary and flat
+
             # Calculate overall metrics
-            accuracy = accuracy_score(all_labels, all_predictions)
-            auc = roc_auc_score(all_labels, all_predictions, average='macro')
-            overall_precision, overall_recall, overall_f1, _ = precision_recall_fscore_support(all_labels, all_predictions, average='macro')
+            accuracy = accuracy_score(all_labels, final_predictions)
+            auc = roc_auc_score(all_labels, final_predictions, average='macro')
+            overall_precision, overall_recall, overall_f1, _ = precision_recall_fscore_support(all_labels, final_predictions, average='macro')
             results.aucs = auc
             results.precisions = overall_precision
             results.sensitivities = overall_recall
             results.f1s = overall_f1
             results.accuracies = accuracy
-    
+
         results.test_losses = test_loss / len(dataloader)
-        return results
-    
+        
+        # Return results, best threshold, and best weights
+        return results, best_threshold, best_weights
+
+
 
 class AELearner(Learner):
 
