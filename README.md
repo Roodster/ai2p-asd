@@ -58,19 +58,16 @@ git push
 1. Download dataset from https://physionet.org/content/chbmit/1.0.0/ 
 2. Extract to `./data/dataset/`.
 ```
+To create a testing or validation dataset, run the command
+```
+python preprocess.py --test_set True --dataset_path "./data/dataset/train/raw/chb01" --save_root "./data/dataset/testset_chb01"
+```
+To create a training dataset, run the command 
+```
+python preprocess.py --test_set False --dataset_path "./data/dataset/train/raw" --save_root "./data/dataset/trainSet"
+```
 
 
 # Jupyter notebook instructions
 
-For now, we do not allow .ipynb file extensions. Since we have different machines and most likely different installs,
-having jupyter notebooks become a hassle. Instead, we use jupytext.
-
-To convert a .py file into jupyter notebook
-```
-jupytext --to ipynb <path-to-file>
-```
-
-To convert a .ipynbb file into python:
-```
-jupytext --to py <path-to-notebook>
-```
+Notebook can be found in ./notebooks/train.ipynb file. Upload the notebook and train, test, validation datasets to Kaggle and run the notebook for training and testing.

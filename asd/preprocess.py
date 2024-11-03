@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 from common.utils import load_edf_filepaths, clean_path, load_eeg_file, save_spectrograms_and_labels, save_signals_and_labels
 from scipy.stats import mode
-
+import argparse
 
 
 class MeanDownSampling(BaseEstimator, TransformerMixin):
@@ -1281,7 +1281,7 @@ def plot_channel_scatter(data, channel_idx, label):
     plt.grid(True)
     plt.show()
 
-def process_patient_folder(patient_folder, save_root):
+def process_patient_folder(patient_folder, save_root, test_set=True):
     """
     Process all .edf files in a patient's folder, concatenate the data, and apply the pipeline.
     :param patient_folder: Path to the patient's folder (e.g., ./data/dataset/train/raw/chb01)
@@ -1329,14 +1329,24 @@ def process_patient_folder(patient_folder, save_root):
     # print(f"Combined EEG data shape for {os.path.basename(patient_folder)}: {combined_eeg_data.shape}")
     # print(f"Combined labels shape for {os.path.basename(patient_folder)}: {combined_labels.shape}")
 
+
+    if(test_set):
     # Apply the pipeline on the combined data
-    pipeline = Pipeline([('filters', BandpassFilter(sfreq=256, lowcut=1, highcut=40, order=6)),
-                        #  ('down sampling', MeanDownSampling(down_freq=64, sfreq=256)),
-                         ('normalizes', ZScoreNormalization()),
-                         ('segments', SegmentSignals(fs=256, segment_length=4, overlap=2)),
-                        #  ('drop', Pre_Post_Drop()),
-                        #  ('sample', RatioPseudoUniformSampling(ratio=15, num_blocks=1000))
-                         ]) 
+        pipeline = Pipeline([('filters', BandpassFilter(sfreq=256, lowcut=1, highcut=40, order=6)),
+                            #  ('down sampling', MeanDownSampling(down_freq=64, sfreq=256)),
+                            ('normalizes', ZScoreNormalization()),
+                            ('segments', SegmentSignals(fs=256, segment_length=4, overlap=2)),
+                            #  ('drop', Pre_Post_Drop()),
+                            #  ('sample', RatioPseudoUniformSampling(ratio=15, num_blocks=1000))
+                            ]) 
+    else:
+        pipeline = Pipeline([('filters', BandpassFilter(sfreq=256, lowcut=1, highcut=40, order=6)),
+                    #  ('down sampling', MeanDownSampling(down_freq=64, sfreq=256)),
+                    ('normalizes', ZScoreNormalization()),
+                    ('segments', SegmentSignals(fs=256, segment_length=4, overlap=2)),
+                    ('drop', Pre_Post_Drop()),
+                    ('sample', RatioPseudoUniformSampling(ratio=15, num_blocks=1000))
+                    ]) 
     X, y = pipeline.transform(X=(combined_eeg_data, combined_labels))
     
     
@@ -1355,7 +1365,7 @@ def process_patient_folder(patient_folder, save_root):
 
 
 
-def process_all_patients(dataset_path, save_root_path):
+def process_all_patients(dataset_path, save_root_path, test_set=False):
     """
     Process all patient folders in the dataset.
     :param dataset_path: Path to the root folder containing patient folders (e.g., ./data/dataset/train/raw/)
@@ -1365,7 +1375,7 @@ def process_all_patients(dataset_path, save_root_path):
     for patient_folder in os.listdir(dataset_path):
         full_patient_path = os.path.join(dataset_path, patient_folder)
         if os.path.isdir(full_patient_path):  # Only process directories (patient folders)
-            process_patient_folder(full_patient_path, save_root_path)
+            process_patient_folder(full_patient_path, save_root_path, test_set)
 
     
 # This function uses the previous approach, where only data from files with .seizure file are segmented. 
@@ -1419,26 +1429,21 @@ def process_all_seizure_files(dataset_path, dataset_save_root_path):
         if os.path.isdir(full_patient_path):  # Only process directories (patient folders)
             process_seizure_files(full_patient_path, dataset_save_root_path)
     
+def main(test_set, dataset_path, save_root):
+    if test_set:
+        # Process a single patient (for test set)
+        process_patient_folder(dataset_path, save_root, test_set)
+    else:
+        # Process all directories
+        process_all_patients(dataset_path, save_root, test_set)
+
 if __name__ == "__main__":
-    dataset_path = "./data/dataset/train/raw/chb04"
-    dataset_path_single = "./data/dataset/train/raw/chb24"
-    
-    save_root_path = "./data/dataset/chb24_test_overlap"
+    parser = argparse.ArgumentParser(description="Process seizure files.")
+    parser.add_argument("--test_set", type=bool, default=False, help="Specify if this is a test set (True/False).")
+    parser.add_argument("--dataset_path", type=str, required=True, help="Path to the dataset directory.")
+    parser.add_argument("--save_root", type=str, required=True, help="Root directory to save the processed files.")
 
-    #print(f"Files in dataset_path_full: {load_edf_filepaths(dataset_path)}")
-    #testing
-    
-    # If you want to use the previous dataset creation approach, use this:
-    #process_seizure_files(dataset_path_single, save_root_path)
+    args = parser.parse_args()
 
-    # If you want to process all directories using previous dataset creation approach    
-    # process_all_seizure_files(dataset_path, save_root_path)
-
-    # If you want to process all directories
-    # process_all_patients(dataset_path, save_root_path)
-
-
-    # If you want to process a single patient (for test set), use this
-    process_patient_folder(dataset_path_single, save_root_path)
-    
-    # load_npz_files("./data/dataset/parviz_train-15-1blya/full_train/chb03")
+    # Run main function with parsed arguments
+    main(args.test_set, args.dataset_path, args.save_root)
