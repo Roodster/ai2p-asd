@@ -24,34 +24,6 @@ notebooks: stores Jupyter notebooks
 ```
 
 
-# Branch instructions
-
-When opening a new branch:
-```
-git branch -b <name-of-branch>
-```
-
-To check status:
-```
-git status
-```
-
-When adding files to commit:
-```
-git add .
-```
-
-When commiting to a branch:
-```
-git commit -m "<commit-message>"
-```
-
-When pushing (the first time u have to add '--set-upstream origin <name-of-branch>').
-```
-git push 
-```
-
-
 # Dataset instruction
 
 ```
